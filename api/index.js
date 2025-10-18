@@ -1,4 +1,4 @@
-// api/index.js - FULL CODE FIXED
+// api/index.js - FULL FIXED CODE
 const express = require('express');
 const session = require('express-session');
 const cors = require('cors');
@@ -50,7 +50,9 @@ app.use(cors({
 }));
 
 app.use(express.json());
-app.use(express.static('public'));
+
+// ✅ FIX: Correct static file path for Vercel - SERVE ALL STATIC FILES
+app.use(express.static(path.join(__dirname, '..', 'public')));
 
 // ✅ FIX: Session configuration for Vercel
 app.use(session({
@@ -104,17 +106,66 @@ function requireAdminOrPetugas(req, res, next) {
     res.status(403).json({ success: false, message: 'Akses ditolak. Hanya admin atau petugas yang dapat mengakses fitur ini.' });
 }
 
-// Public routes
+// ✅ FIX: Correct HTML file paths
+const publicPath = path.join(__dirname, '..', 'public');
+
+// Public routes - FIXED PATHS
 app.get('/login', (req, res) => {
-    res.sendFile(path.join(__dirname, '../public/Login.html'));
+    res.sendFile(path.join(publicPath, 'Login.html'));
 });
 
 app.get('/register', (req, res) => {
-    res.sendFile(path.join(__dirname, '../public/Register.html'));
+    res.sendFile(path.join(publicPath, 'Register.html'));
 });
 
 app.get('/about', (req, res) => {
-    res.sendFile(path.join(__dirname, '../public/About.html'));
+    res.sendFile(path.join(publicPath, 'About.html'));
+});
+
+app.get('/', (req, res) => {
+    res.sendFile(path.join(publicPath, 'Index.html'));
+});
+
+app.get('/Catalog.html', (req, res) => {
+    res.sendFile(path.join(publicPath, 'Catalog.html'));
+});
+
+app.get('/LoanHistory.html', (req, res) => {
+    res.sendFile(path.join(publicPath, 'LoanHistory.html'));
+});
+
+app.get('/Dashboard.html', (req, res) => {
+    res.sendFile(path.join(publicPath, 'Dashboard.html'));
+});
+
+// ✅ FIX: Serve CSS files explicitly
+app.get('/css/*', (req, res) => {
+    const cssPath = path.join(publicPath, 'css', req.params[0]);
+    if (fs.existsSync(cssPath)) {
+        res.sendFile(cssPath);
+    } else {
+        res.status(404).send('CSS file not found');
+    }
+});
+
+// ✅ FIX: Serve JS files explicitly
+app.get('/js/*', (req, res) => {
+    const jsPath = path.join(publicPath, 'js', req.params[0]);
+    if (fs.existsSync(jsPath)) {
+        res.sendFile(jsPath);
+    } else {
+        res.status(404).send('JS file not found');
+    }
+});
+
+// ✅ FIX: Serve images
+app.get('/images/*', (req, res) => {
+    const imagePath = path.join(publicPath, 'images', req.params[0]);
+    if (fs.existsSync(imagePath)) {
+        res.sendFile(imagePath);
+    } else {
+        res.status(404).send('Image not found');
+    }
 });
 
 // Authentication routes
@@ -270,23 +321,6 @@ app.get('/check-session', (req, res) => {
     } else {
         res.json({ success: true, isLoggedIn: false });
     }
-});
-
-// HOME ROUTE
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, '../public/index.html'));
-});
-
-app.get('/Catalog.html', (req, res) => {
-    res.sendFile(path.join(__dirname, '../public/Catalog.html'));
-});
-
-app.get('/LoanHistory.html', (req, res) => {
-    res.sendFile(path.join(__dirname, '../public/LoanHistory.html'));
-});
-
-app.get('/Dashboard.html', (req, res) => {
-    res.sendFile(path.join(__dirname, '../public/Dashboard.html'));
 });
 
 // API Routes
@@ -729,16 +763,6 @@ app.post('/return-book/:id', requireAuth, async (req, res) => {
     } catch (err) {
         console.error('Error returning book:', err);
         res.status(400).json({ success: false, message: 'Request tidak valid' });
-    }
-});
-
-// Serve images
-app.get('/images/*', (req, res) => {
-    const imagePath = path.join(__dirname, '../public/images', req.params[0]);
-    if (fs.existsSync(imagePath)) {
-        res.sendFile(imagePath);
-    } else {
-        res.status(404).send('Image not found');
     }
 });
 
