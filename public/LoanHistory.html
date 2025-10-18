@@ -1,0 +1,839 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>📋 Riwayat Peminjaman - Sistem Informasi Perpustakaan</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css" />
+    <link rel="stylesheet" href="css/Style.css">
+</head>
+<body>
+    <!-- NAVIGATION - FIXED -->
+    <nav>
+        <ul>
+            <li data-page="home"><a href="/">🏠 Home</a></li>
+            <li data-page="dashboard"><a href="/Dashboard.html">📊 Dashboard</a></li>  
+            <li data-page="catalog"><a href="/Catalog.html">📚 Katalog Buku</a></li>
+            <li data-page="loan-history"><a href="/LoanHistory.html">📋 Riwayat Pinjam</a></li>
+            <li data-page="about"><a href="/about">ℹ️ About</a></li>
+
+            <!-- Navigation untuk user yang belum login -->
+            <li id="nav-login" class="nav-fade">
+                <a href="/login">🚪 Login</a>
+            </li>
+            <li id="nav-register" class="nav-fade">
+                <a href="/register">📝 Daftar</a>
+            </li>
+
+            <!-- Navigation untuk user yang sudah login -->
+            <li id="nav-username" class="nav-fade"></li>
+            <li id="nav-logout" class="nav-fade">
+                <a href="#" id="logout-link">🚪 Logout</a>
+            </li>
+        </ul>
+    </nav>
+
+    <div class="toggle-container">
+        <button id="mode-toggle" aria-label="Toggle mode gelap/terang">🌓 Mode Gelap</button>
+    </div>
+
+    <h1>📋 Riwayat Peminjaman Buku</h1>
+    <p id="welcome-message" class="center-text"></p>
+
+    <div class="content-container">
+        <div id="loan-stats" class="loan-stats-container">
+            <h3 class="stats-title">📊 Statistik Peminjaman</h3>
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <span class="stat-number" id="total-loans">0</span>
+                    <span class="stat-label">Total Peminjaman</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number" id="active-loans">0</span>
+                    <span class="stat-label">Sedang Dipinjam</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number" id="overdue-loans">0</span>
+                    <span class="stat-label">Terlambat</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number" id="total-denda">Rp 0</span>
+                    <span class="stat-label">Total Denda</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Search & Filter Section -->
+        <div class="advanced-search-container">
+            <h3>🔍 Filter Riwayat</h3>
+            
+            <div class="search-form">
+                <div class="search-row">
+                    <div class="search-group">
+                        <label for="filter-status">Status:</label>
+                        <select id="filter-status">
+                            <option value="">Semua Status</option>
+                            <option value="Dipinjam">Sedang Dipinjam</option>
+                            <option value="Dikembalikan">Sudah Dikembalikan</option>
+                            <option value="Terlambat">Terlambat</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="search-actions">
+                    <button type="button" id="apply-filter" class="search-button">Terapkan Filter 🔍</button>
+                    <button type="button" id="print-report" class="recommendation-button">🖨️ Cetak Laporan</button>
+                    <button type="button" id="reset-filter" class="reset-button">🔄 Reset</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- CONTAINER TABEL YANG DIPERBAIKI -->
+        <div id="loan-history-table-container">
+            <table id="loan-history-table">
+                <thead>
+                    <tr>
+                        <th>Cover</th>
+                        <th>Judul Buku</th>
+                        <th>Penulis</th>
+                        <th>Peminjam</th>
+                        <th>Tanggal Pinjam</th>
+                        <th>Batas Kembali</th>
+                        <th>Tanggal Kembali</th>
+                        <th>Durasi</th>
+                        <th>Status</th>
+                        <th>Denda</th>
+                        <th>Aksi</th>
+                    </tr>
+                </thead>
+                <tbody id="loan-history-body">
+                    <!-- Data akan diisi oleh JavaScript -->
+                </tbody>
+            </table>
+        </div>
+        
+        <div id="no-data-message" class="no-data-container">
+            <div class="no-data-title">Tidak ada riwayat peminjaman</div>
+            <div class="no-data-description">Silakan pinjam buku terlebih dahulu dari halaman katalog.</div>
+        </div>
+
+        <!-- Modal untuk detail peminjaman -->
+        <div id="loan-detail-modal" class="modal">
+            <div class="modal-content">
+                <span class="close-button">&times;</span>
+                <div id="loan-modal-body">
+                    <!-- Detail peminjaman akan dimuat di sini -->
+                </div>
+                <div class="modal-actions">
+                    <button type="button" id="return-book-btn" class="borrow-button">Kembalikan Buku 📚</button>
+                    <button type="button" class="back-button">Tutup</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+    <script>
+        let allLoans = [];
+        let currentLoanDetail = null;
+        let currentFilteredLoans = [];
+        // Expose to window for printing logic
+        window.allLoans = allLoans;
+        window.currentFilteredLoans = currentFilteredLoans;
+
+        // Fungsi untuk memotong teks yang terlalu panjang
+        function truncateText(text, maxLength) {
+            if (!text) return '';
+            if (text.length <= maxLength) return text;
+            return text.substring(0, maxLength) + '...';
+        }
+
+        // Fungsi untuk format tanggal - DIPERBAIKI
+        function formatDate(dateString) {
+            if (!dateString) return '-';
+            try {
+                const date = new Date(dateString);
+                // Handle invalid date
+                if (isNaN(date.getTime())) return '-';
+                return date.toLocaleDateString('id-ID', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric'
+                });
+            } catch (error) {
+                console.error('Error formatting date:', error);
+                return '-';
+            }
+        }
+
+        // Fungsi untuk format denda - DIPERBAIKI
+        function formatDenda(denda) {
+            if (!denda || denda === 0) return '-';
+            // Pastikan denda adalah number
+            const dendaNumber = typeof denda === 'number' ? denda : parseFloat(denda);
+            if (isNaN(dendaNumber)) return '-';
+            return `Rp ${dendaNumber.toLocaleString('id-ID')}`;
+        }
+
+        function showNotification(message, type = 'success') {
+            Toastify({
+                text: message,
+                duration: 3000,
+                close: true,
+                gravity: "top",
+                position: "right",
+                backgroundColor: type === 'success' ? "linear-gradient(135deg, #28a745, #20c997)" : "linear-gradient(135deg, #dc3545, #e83e8c)",
+                stopOnFocus: true,
+            }).showToast();
+        }
+
+        async function fetchLoanHistory() {
+            try {
+                showLoadingState();
+                const response = await fetch('/loan-history');
+                if (response.status === 401) {
+                    window.location.href = '/login';
+                    return;
+                }
+                const result = await response.json();
+                
+                if (result.success) {
+                    allLoans = result.loans || [];
+                    window.allLoans = allLoans;
+                    currentFilteredLoans = [...allLoans];
+                    window.currentFilteredLoans = currentFilteredLoans;
+                    displayLoans(allLoans);
+                    updateLoanStats(allLoans);
+                } else {
+                    showNotification('Gagal memuat riwayat peminjaman: ' + result.message, 'error');
+                    showNoDataState();
+                }
+            } catch (error) {
+                console.error('Error fetching loan history:', error);
+                showNotification('Terjadi kesalahan saat memuat riwayat peminjaman.', 'error');
+                showNoDataState();
+            }
+        }
+
+        function showLoadingState() {
+            document.getElementById('loan-history-table-container').style.display = 'none';
+            document.getElementById('no-data-message').style.display = 'none';
+            
+            // Create and show loading spinner
+            createLoadingSpinner();
+        }
+        
+        function createLoadingSpinner() {
+            // Remove existing spinner
+            const existingSpinner = document.getElementById('loading-spinner');
+            if (existingSpinner) {
+                existingSpinner.remove();
+            }
+            
+            // Create new loading spinner
+            const spinner = document.createElement('div');
+            spinner.id = 'loading-spinner';
+            spinner.className = 'loading-container';
+            spinner.innerHTML = `
+                <div class="loading-content">
+                    <div class="loading-spinner"></div>
+                    <div class="loading-text">Memuat data riwayat...</div>
+                    <div class="loading-dots">
+                        <span></span><span></span><span></span>
+                    </div>
+                </div>
+            `;
+            
+            // Insert after stats container or at beginning of content
+            const statsContainer = document.getElementById('loan-stats');
+            const contentContainer = document.querySelector('.content-container');
+            if (statsContainer) {
+                statsContainer.insertAdjacentElement('afterend', spinner);
+            } else if (contentContainer) {
+                contentContainer.appendChild(spinner);
+            }
+        }
+        
+        function hideLoadingSpinner() {
+            const spinner = document.getElementById('loading-spinner');
+            if (spinner) {
+                spinner.classList.add('fade-out');
+                setTimeout(() => {
+                    spinner.remove();
+                }, 300);
+            }
+        }
+
+        function showNoDataState() {
+            hideLoadingSpinner();
+            document.getElementById('loan-history-table-container').style.display = 'none';
+            document.getElementById('no-data-message').style.display = 'block';
+        }
+
+        function showDataState() {
+            hideLoadingSpinner();
+            document.getElementById('loan-history-table-container').style.display = 'block';
+            document.getElementById('no-data-message').style.display = 'none';
+        }
+
+        function updateLoanStats(loans) {
+            const totalLoans = loans.length;
+            const activeLoans = loans.filter(loan => loan.status === 'Dipinjam').length;
+            
+            // PERBAIKAN: Hitung terlambat dengan benar
+            const overdueLoans = loans.filter(loan => {
+                if (loan.status === 'Dipinjam') {
+                    const batas = new Date(loan.batas_pengembalian);
+                    const sekarang = new Date();
+                    return sekarang > batas;
+                }
+                return loan.status === 'Terlambat';
+            }).length;
+            
+            // PERBAIKAN: Hitung denda hanya dari yang sudah ada denda
+            const totalDenda = loans.reduce((sum, loan) => {
+                const denda = parseFloat(loan.denda) || 0;
+                return sum + denda;
+            }, 0);
+
+            document.getElementById('total-loans').textContent = totalLoans.toLocaleString('id-ID');
+            document.getElementById('active-loans').textContent = activeLoans.toLocaleString('id-ID');
+            document.getElementById('overdue-loans').textContent = overdueLoans.toLocaleString('id-ID');
+            document.getElementById('total-denda').textContent = `Rp ${totalDenda.toLocaleString('id-ID')}`;
+        }
+
+        // Fungsi untuk menampilkan data peminjaman - DIPERBAIKI
+        let currentSort = { key: 'tanggal_pinjam', order: 'desc' };
+        let currentPage = 1;
+        const itemsPerPage = 20;
+        
+        function compareValues(a, b, key) {
+            const dateKeys = ['tanggal_pinjam','batas_pengembalian','tanggal_kembali'];
+            const numKeys = ['durasi_hari','denda'];
+            const av = a[key];
+            const bv = b[key];
+            if (dateKeys.includes(key)) {
+                const ad = av ? new Date(av).getTime() : 0;
+                const bd = bv ? new Date(bv).getTime() : 0;
+                return ad - bd;
+            }
+            if (numKeys.includes(key)) {
+                return (parseFloat(av)||0) - (parseFloat(bv)||0);
+            }
+            return String(av||'').localeCompare(String(bv||''), 'id-ID', { sensitivity: 'base' });
+        }
+
+        function paginateData(data) {
+            const startIndex = (currentPage - 1) * itemsPerPage;
+            return data.slice(startIndex, startIndex + itemsPerPage);
+        }
+
+        function sortCurrent(key) {
+            if (currentSort.key === key) {
+                currentSort.order = currentSort.order === 'asc' ? 'desc' : 'asc';
+            } else {
+                currentSort.key = key;
+                currentSort.order = 'asc';
+            }
+            currentFilteredLoans.sort((a,b)=>{
+                const diff = compareValues(a,b,key);
+                return currentSort.order === 'asc' ? diff : -diff;
+            });
+            updateSortIndicators();
+            currentPage = 1;
+            displayLoans(currentFilteredLoans);
+        }
+
+        function updateSortIndicators() {
+            const sortableHeaders = document.querySelectorAll('#loan-history-table thead th.sortable');
+            sortableHeaders.forEach(th=>{
+                const indicator = th.querySelector('.sort-indicator');
+                if (indicator) {
+                    indicator.textContent = '';
+                    if (th.dataset.key === currentSort.key) {
+                        indicator.textContent = currentSort.order === 'asc' ? '▲' : '▼';
+                    }
+                }
+            });
+        }
+
+        function renderPagination(total, page, limit) {
+            const controls = document.getElementById('pagination-controls');
+            if (controls) {
+                controls.style.display = total > limit ? 'flex' : 'none';
+                const pageInfo = document.getElementById('page-info');
+                if (pageInfo) {
+                    pageInfo.textContent = `Page ${page} / ${Math.max(1, Math.ceil(total/limit))}`;
+                }
+                const prevBtn = document.getElementById('prev-page');
+                const nextBtn = document.getElementById('next-page');
+                if (prevBtn) prevBtn.disabled = page <= 1;
+                if (nextBtn) nextBtn.disabled = page >= Math.ceil(total/limit);
+            }
+        }
+
+        function displayLoans(loansToDisplay) {
+            const tbody = document.getElementById('loan-history-body');
+            const userRole = localStorage.getItem('userRole');
+            const currentUserId = localStorage.getItem('userId');
+            
+            tbody.innerHTML = '';
+
+            if (!loansToDisplay || loansToDisplay.length === 0) {
+                showNoDataState();
+                return;
+            }
+
+            showDataState();
+
+            loansToDisplay.forEach(loan => {
+                const row = document.createElement('tr');
+                
+                // Tentukan class status - DIPERBAIKI
+                let statusClass = 'status-tersedia';
+                let displayStatus = loan.status;
+                
+                const batasKembali = new Date(loan.batas_pengembalian);
+                const sekarang = new Date();
+                const isTerlambat = loan.status === 'Dipinjam' && sekarang > batasKembali;
+                
+                if (isTerlambat) {
+                    statusClass = 'status-terlambat';
+                    displayStatus = 'Terlambat';
+                } else if (loan.status === 'Dipinjam') {
+                    statusClass = 'status-dipinjam';
+                } else if (loan.status === 'Dikembalikan') {
+                    statusClass = 'status-tersedia';
+                } else if (loan.status === 'Terlambat') {
+                    statusClass = 'status-terlambat';
+                }
+                
+                // Format data - DIPERBAIKI
+                const tanggalKembali = loan.tanggal_kembali ? formatDate(loan.tanggal_kembali) : '-';
+                const dendaDisplay = formatDenda(loan.denda);
+
+                // Tentukan tombol aksi
+                let actionButtons = '';
+                const canReturn = (loan.status === 'Dipinjam' || loan.status === 'Terlambat') && 
+                                 (userRole === 'admin' || userRole === 'petugas' || loan.user_id == currentUserId);
+                
+                if (canReturn) {
+                    actionButtons = `
+                        <button type="button" onclick="event.stopPropagation(); returnBook(${loan.id})" class="borrow-button">
+                            Kembalikan
+                        </button>
+                    `;
+                }
+
+                row.innerHTML = `
+                    <td data-label="Cover">
+                        <img src="${loan.gambar || 'https://via.placeholder.com/45x63/667eea/ffffff?text=No+Cover'}" 
+                             alt="Cover ${loan.judul}" 
+                             title="${loan.judul}"
+                             class="history-book-cover"
+                             onerror="this.src='https://via.placeholder.com/45x63/667eea/ffffff?text=No+Cover'">
+                    </td>
+                    <td data-label="Judul" title="${loan.judul}">
+                        <strong class="truncate-text">${truncateText(loan.judul, 40)}</strong>
+                    </td>
+                    <td data-label="Penulis" title="${loan.penulis}">${truncateText(loan.penulis, 30)}</td>
+                    <td data-label="Peminjam" title="${loan.nama_peminjam}">${truncateText(loan.nama_peminjam, 25)}</td>
+                    <td data-label="Tgl Pinjam">${formatDate(loan.tanggal_pinjam)}</td>
+                    <td data-label="Batas Kembali" style="color: ${isTerlambat ? '#dc3545' : 'inherit'}; font-weight: 600">
+                        ${formatDate(loan.batas_pengembalian)}
+                        ${isTerlambat ? ' ⚠️' : ''}
+                    </td>
+                    <td data-label="Tgl Kembali">${tanggalKembali}</td>
+                    <td data-label="Durasi">${loan.durasi_hari || 7} hari</td>
+                    <td data-label="Status">
+                        <span class="${statusClass}" title="${loan.status}">
+                            ${displayStatus}
+                            ${isTerlambat ? ' ⚠️' : ''}
+                        </span>
+                    </td>
+                    <td data-label="Denda" class="denda-number" style="font-weight: ${loan.denda > 0 ? '600' : '500'}; color: ${loan.denda > 0 ? '#dc3545' : 'inherit'}">
+                        ${dendaDisplay}
+                    </td>
+                    <td data-label="Aksi" class="action-cell">
+                        <button type="button" onclick="event.stopPropagation(); showLoanDetail(${loan.id})" class="search-button">
+                            Detail
+                        </button>
+                        ${actionButtons}
+                    </td>
+                `;
+                
+                // Tambahkan click event untuk row
+                row.addEventListener('click', () => showLoanDetail(loan.id));
+                tbody.appendChild(row);
+            });
+        }
+
+        async function showLoanDetail(loanId) {
+            const loan = allLoans.find(l => l.id === loanId);
+            if (!loan) return;
+
+            currentLoanDetail = loan;
+            const modal = document.getElementById('loan-detail-modal');
+            const modalBody = document.getElementById('loan-modal-body');
+            const returnButton = document.getElementById('return-book-btn');
+            const userRole = localStorage.getItem('userRole');
+            const currentUserId = localStorage.getItem('userId');
+            
+            const batasKembali = new Date(loan.batas_pengembalian);
+            const sekarang = new Date();
+            const sisaHari = Math.ceil((batasKembali - sekarang) / (1000 * 60 * 60 * 24));
+            const isTerlambat = (loan.status === 'Dipinjam' || loan.status === 'Terlambat') && sekarang > batasKembali;
+            const canReturn = (loan.status === 'Dipinjam' || loan.status === 'Terlambat') && 
+                             (userRole === 'admin' || userRole === 'petugas' || loan.user_id == currentUserId);
+            
+            modalBody.innerHTML = `
+                <div class="detail-header">
+                    <img src="${loan.gambar || 'https://via.placeholder.com/150x210/667eea/ffffff?text=No+Cover'}" 
+                         alt="Cover ${loan.judul}" 
+                         class="detail-book-cover"
+                         onerror="this.src='https://via.placeholder.com/150x210/667eea/ffffff?text=No+Cover'">
+                    <div>
+                        <h2>${loan.judul}</h2>
+                        <p><strong>Penulis:</strong> ${loan.penulis}</p>
+                        <p><strong>Peminjam:</strong> ${loan.nama_peminjam}</p>
+                        <p><strong>Tanggal Pinjam:</strong> ${formatDate(loan.tanggal_pinjam)}</p>
+                        <p><strong>Durasi Pinjam:</strong> ${loan.durasi_hari || 7} hari</p>
+                        <p><strong>Batas Kembali:</strong> ${formatDate(loan.batas_pengembalian)}</p>
+                        <p><strong>Tanggal Kembali:</strong> ${loan.tanggal_kembali ? formatDate(loan.tanggal_kembali) : 'Belum dikembalikan'}</p>
+                        <p><strong>Status:</strong> <span class="${loan.status === 'Dipinjam' ? 'status-dipinjam' : loan.status === 'Terlambat' ? 'status-terlambat' : 'status-tersedia'}">
+                            ${isTerlambat ? 'Terlambat' : loan.status}
+                        </span></p>
+                        ${(loan.status === 'Dipinjam' || loan.status === 'Terlambat') ? `
+                        <p><strong>Sisa Waktu:</strong> <span style="color: ${sisaHari < 0 ? '#dc3545' : sisaHari <= 2 ? '#ffc107' : '#28a745'}">
+                            ${sisaHari < 0 ? Math.abs(sisaHari) + ' hari terlambat' : sisaHari + ' hari lagi'}
+                        </span></p>
+                        ` : ''}
+                        <p><strong>Denda:</strong> ${formatDenda(loan.denda)}</p>
+                        ${isTerlambat ? `<p style="color: #dc3545; font-weight: bold;">⚠️ Buku terlambat dikembalikan! Denda akan dikenakan.</p>` : ''}
+                    </div>
+                </div>
+            `;
+            
+            // Tampilkan tombol kembalikan jika memenuhi syarat
+            if (canReturn) {
+                returnButton.style.display = 'inline-block';
+                returnButton.onclick = () => returnBook(loan.id);
+            } else {
+                returnButton.style.display = 'none';
+            }
+            
+            modal.style.display = 'block';
+        }
+
+        async function returnBook(loanId) {
+            if (!confirm('Apakah Anda yakin ingin mengembalikan buku ini?')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/return-book/${loanId}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                
+                const result = await response.json();
+                if (result.success) {
+                    showNotification(result.message, 'success');
+                    document.getElementById('loan-detail-modal').style.display = 'none';
+                    fetchLoanHistory(); // Refresh data
+                } else {
+                    showNotification('Gagal mengembalikan buku: ' + result.message, 'error');
+                }
+            } catch (error) {
+                console.error('Error returning book:', error);
+                showNotification('Terjadi kesalahan saat mengembalikan buku.', 'error');
+            }
+        }
+
+        // Filter functionality - DIPERBAIKI
+        function applyFilter() {
+            const statusFilter = document.getElementById('filter-status').value;
+            
+            currentFilteredLoans = allLoans.filter(loan => {
+                if (statusFilter === 'Terlambat') {
+                    const batas = new Date(loan.batas_pengembalian);
+                    const sekarang = new Date();
+                    return (loan.status === 'Dipinjam' && sekarang > batas) || loan.status === 'Terlambat';
+                } else if (statusFilter) {
+                    return loan.status === statusFilter;
+                }
+                return true;
+            });
+            
+            window.currentFilteredLoans = currentFilteredLoans;
+            displayLoans(currentFilteredLoans);
+            updateLoanStats(currentFilteredLoans);
+        }
+
+        function resetFilter() {
+            document.getElementById('filter-status').value = '';
+            currentFilteredLoans = [...allLoans];
+            window.currentFilteredLoans = currentFilteredLoans;
+            displayLoans(allLoans);
+            updateLoanStats(allLoans);
+            showNotification('Filter telah direset', 'info');
+        }
+
+        // Event listeners
+        document.getElementById('apply-filter').addEventListener('click', applyFilter);
+        document.getElementById('reset-filter').addEventListener('click', resetFilter);
+
+        // Modal close functionality
+        document.querySelector('.close-button').addEventListener('click', () => {
+            document.getElementById('loan-detail-modal').style.display = 'none';
+        });
+
+        document.querySelector('.back-button').addEventListener('click', () => {
+            document.getElementById('loan-detail-modal').style.display = 'none';
+        });
+
+        window.addEventListener('click', (event) => {
+            const modal = document.getElementById('loan-detail-modal');
+            if (event.target === modal) {
+                modal.style.display = 'none';
+            }
+        });
+
+        // 🆕 NAVIGATION UPDATE - DIPERBAIKI
+        function updateNav() {
+            const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
+            const navUsername = document.getElementById('nav-username');
+            const navLogout = document.getElementById('nav-logout');
+            const navLogin = document.getElementById('nav-login');
+            const navRegister = document.getElementById('nav-register');
+            const welcomeMessageElement = document.getElementById('welcome-message');
+            const navItems = document.querySelectorAll('nav ul li');
+            const currentPagePath = window.location.pathname;
+
+            // PASTIKAN SEMUA NAVIGATION ITEMS VISIBLE
+            navItems.forEach(item => {
+                item.style.display = 'flex';
+                item.style.visibility = 'visible';
+                item.style.opacity = '1';
+            });
+
+            if (isLoggedIn) {
+                const userName = localStorage.getItem('userName');
+                const userRole = localStorage.getItem('userRole');
+
+                if (navUsername) {
+                    navUsername.style.display = 'flex';
+                    navUsername.textContent = `👋 Halo, ${userName} (${userRole})`;
+                }
+
+                if (navLogout) {
+                    navLogout.style.display = 'flex';
+                }
+                
+                if (navLogin) {
+                    navLogin.style.display = 'none';
+                }
+
+                if (navRegister) {
+                    navRegister.style.display = 'none';
+                }
+
+                if (welcomeMessageElement) {
+                    welcomeMessageElement.textContent = `Selamat datang, ${userName} (${userRole})!`;
+                }
+
+            } else {
+                if (navUsername) {
+                    navUsername.style.display = 'none';
+                }
+                
+                if (navLogout) {
+                    navLogout.style.display = 'none';
+                }
+                
+                if (navLogin) {
+                    navLogin.style.display = 'flex';
+                }
+
+                if (navRegister) {
+                    navRegister.style.display = 'flex';
+                }
+
+                if (welcomeMessageElement) {
+                    welcomeMessageElement.textContent = '';
+                }
+            }
+
+            // Hide current page link
+            navItems.forEach(item => {
+                const page = item.dataset.page;
+                if (currentPagePath === '/LoanHistory.html' || currentPagePath === '/loan-history') {
+                    if (page === 'loan-history') {
+                        item.style.display = 'none';
+                    }
+                }
+            });
+        }
+
+        async function handleLogout(event) {
+            event.preventDefault();
+            try {
+                const response = await fetch('/logout', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                const result = await response.json();
+                if (result.success) {
+                    localStorage.clear();
+                    showNotification('👋 Anda telah berhasil logout.', 'success');
+                    window.location.href = '/login';
+                } else {
+                    showNotification('❌ Gagal logout: ' + result.message, 'error');
+                }
+            } catch (error) {
+                console.error('Error during logout:', error);
+                showNotification('❌ Terjadi kesalahan saat logout.', 'error');
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // CEK LOGIN DENGAN LEBIH KETAT
+            const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
+            const userRole = localStorage.getItem('userRole');
+            const userName = localStorage.getItem('userName');
+            
+            if (!isLoggedIn || !userRole || !userName) {
+                window.location.href = '/login';
+                return;
+            }
+
+            // Dark mode ditangani terpusat oleh app.js (attachModeToggle)
+            // Tidak perlu handler duplikat di halaman ini.
+
+            updateNav();
+            fetchLoanHistory();
+
+            const logoutLink = document.getElementById('logout-link');
+            if (logoutLink) {
+                logoutLink.addEventListener('click', handleLogout);
+            }
+
+            const printButton = document.getElementById('print-report');
+            if (printButton) {
+                printButton.addEventListener('click', () => {
+                    // Ambil angka dari kartu statistik
+                    const totalLoans = document.getElementById('total-loans')?.innerText || '0';
+                    const activeLoans = document.getElementById('active-loans')?.innerText || '0';
+                    const overdueLoans = document.getElementById('overdue-loans')?.innerText || '0';
+                    const totalDenda = document.getElementById('total-denda')?.innerText || 'Rp 0';
+
+                    // Data tabel yang akan dicetak: gunakan filter aktif jika ada
+                    const dataToPrint = (typeof currentFilteredLoans !== 'undefined' && currentFilteredLoans.length > 0)
+                        ? currentFilteredLoans
+                        : (typeof allLoans !== 'undefined' ? allLoans : (window.currentFilteredLoans && window.currentFilteredLoans.length ? window.currentFilteredLoans : (window.allLoans || [])));
+
+                    // Build rows html
+                    const rowsHTML = (dataToPrint || []).map(loan => {
+                        const batas = loan.batas_pengembalian ? new Date(loan.batas_pengembalian) : null;
+                        const sekarang = new Date();
+                        const isTerlambat = batas && (loan.status === 'Dipinjam' || loan.status === 'Terlambat') && sekarang > batas;
+                        const displayStatus = isTerlambat ? 'Terlambat' : (loan.status || '-');
+                        return `
+                            <tr>
+                                <td style="text-align:center;width:36pt">
+                                    <img src="${loan.gambar || 'https://via.placeholder.com/30x42/667eea/ffffff?text=No+Cover'}" alt="${loan.judul}" class="history-book-cover" />
+                                </td>
+                                <td>${loan.judul || '-'}</td>
+                                <td>${loan.penulis || '-'}</td>
+                                <td>${loan.nama_peminjam || '-'}</td>
+                                <td>${formatDate(loan.tanggal_pinjam)}</td>
+                                <td>${formatDate(loan.batas_pengembalian)}</td>
+                                <td>${formatDate(loan.tanggal_kembali)}</td>
+                                <td>${loan.durasi_hari || 7} hari</td>
+                                <td>${displayStatus}</td>
+                                <td>${formatDenda(loan.denda)}</td>
+                            </tr>
+                        `;
+                    }).join('');
+
+                    // Buat area cetak sederhana
+                    const oldArea = document.getElementById('print-area');
+                    if (oldArea) oldArea.remove();
+                    const area = document.createElement('div');
+                    area.id = 'print-area';
+
+                    const userName = localStorage.getItem('userName') || '—';
+                    const printedAt = new Date();
+                    const stamp = printedAt.toLocaleString('id-ID');
+
+                    area.innerHTML = `
+                        <h1>📊 Statistik Peminjaman</h1>
+                        <div style="margin: 4pt 0 16pt 0; font-size: 10pt;">
+                            Dicetak oleh: <strong>${userName}</strong> • Tanggal: <strong>${stamp}</strong>
+                        </div>
+                        <div class="stats-grid">
+                            <div class="stat">
+                                <div class="num">${totalLoans}</div>
+                                <div class="label">Total Peminjaman</div>
+                            </div>
+                            <div class="stat">
+                                <div class="num">${activeLoans}</div>
+                                <div class="label">Sedang Dipinjam</div>
+                            </div>
+                            <div class="stat">
+                                <div class="num">${overdueLoans}</div>
+                                <div class="label">Terlambat</div>
+                            </div>
+                            <div class="stat">
+                                <div class="num">${totalDenda}</div>
+                                <div class="label">Total Denda</div>
+                            </div>
+                        </div>
+                        <table class="print-loans-table" cellspacing="0" cellpadding="0">
+                            <thead>
+                                <tr>
+                                    <th>Cover</th>
+                                    <th>Judul Buku</th>
+                                    <th>Penulis</th>
+                                    <th>Peminjam</th>
+                                    <th>Tanggal Pinjam</th>
+                                    <th>Batas Kembali</th>
+                                    <th>Tanggal Kembali</th>
+                                    <th>Durasi</th>
+                                    <th>Status</th>
+                                    <th>Denda</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${rowsHTML || '<tr><td colspan="10" style="text-align:center">Tidak ada data</td></tr>'}
+                            </tbody>
+                        </table>
+                    `;
+                    document.body.appendChild(area);
+
+                    // Mode cetak sederhana: hanya tampilkan print-area
+                    document.body.classList.add('printing-simple');
+
+                    // Beri jeda kecil agar DOM dan CSS apply sebelum print
+                    setTimeout(() => {
+                        window.print();
+                        setTimeout(() => {
+                            document.body.classList.remove('printing-simple');
+                            area.remove();
+                        }, 150);
+                    }, 50);
+                });
+            }
+
+            // Enter key untuk filter
+            document.getElementById('filter-status').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    applyFilter();
+                }
+            });
+        });
+    </script>
+    <script src="js/app.js"></script>
+</body>
+</html>

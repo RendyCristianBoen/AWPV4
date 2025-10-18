@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>📚 Katalog Buku - Sistem Informasi Perpustakaan</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css" />
+    <link rel="stylesheet" href="css/Style.css">
+</head>
+<body>
+  <!-- NAVIGATION - FIXED -->
+  <nav>
+    <ul>
+      <li data-page="home"><a href="/">🏠 Home</a></li>
+      <li data-page="dashboard"><a href="/Dashboard.html">📊 Dashboard</a></li>
+      <li data-page="catalog"><a href="/Catalog.html">📚 Katalog Buku</a></li>
+      <li data-page="loan-history"><a href="/LoanHistory.html">📋 Riwayat Pinjam</a></li>
+      <li data-page="about"><a href="/about">ℹ️ About</a></li>
+
+      <!-- Navigation untuk user yang belum login -->
+      <li id="nav-login" class="nav-fade">
+        <a href="/login">🚪 Login</a>
+      </li>
+      <li id="nav-register" class="nav-fade">
+        <a href="/register">📝 Daftar</a>
+      </li>
+
+      <!-- Navigation untuk user yang sudah login -->
+      <li id="nav-username" class="nav-fade"></li>
+      <li id="nav-logout" class="nav-fade">
+        <a href="#" id="logout-link">🚪 Logout</a>
+      </li>
+    </ul>
+  </nav>
+
+  <div class="toggle-container">
+    <button type="button" id="mode-toggle" aria-label="Toggle mode gelap/terang">🌓 Mode Gelap</button>
+  </div>
+
+  <h1>📚 Katalog Buku</h1>
+  <p id="welcome-message" class="center-text"></p>
+
+  <!-- 🆕 ADVANCED SEARCH CONTAINER - DIPERBAIKI -->
+  <div class="advanced-search-container">
+    <h3>🔍 Pencarian Lanjutan</h3>
+    
+    <div class="search-form">
+      <div class="search-row">
+        <div class="search-group">
+          <label for="search-query">Kata Kunci:</label>
+          <input type="text" id="search-query" placeholder="Cari judul, penulis, penerbit...">
+        </div>
+        
+        <div class="search-group">
+          <label for="search-author">Penulis:</label>
+          <input type="text" id="search-author" placeholder="Nama penulis...">
+        </div>
+      </div>
+
+      <div class="search-row">
+        <div class="search-group">
+          <label for="search-genre">Genre:</label>
+          <select id="search-genre">
+            <option value="">Semua Genre</option>
+            <option value="Fiksi">Fiksi</option>
+            <option value="NonFiksi">NonFiksi</option>
+            <option value="Komik">Komik</option>
+            <option value="Biografi">Biografi</option>
+            <option value="Sains">Sains</option>
+            <option value="Sejarah">Sejarah</option>
+            <option value="Fantasi">Fantasi</option>
+            <option value="Misteri">Misteri</option>
+          </select>
+        </div>
+
+        <div class="search-group">
+          <label for="search-year">Tahun Rilis:</label>
+          <input type="number" id="search-year" placeholder="Tahun..." min="1000" max="2099">
+        </div>
+
+        <div class="search-group">
+          <label for="search-rating">Rating Minimal:</label>
+          <select id="search-rating">
+            <option value="0">Semua Rating</option>
+            <option value="4.5">⭐ 4.5+ (Excellent)</option>
+            <option value="4.0">⭐ 4.0+ (Very Good)</option>
+            <option value="3.5">⭐ 3.5+ (Good)</option>
+            <option value="3.0">⭐ 3.0+ (Average)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="search-actions">
+        <button type="button" id="advanced-search-btn" class="search-button">🔍 Cari Buku</button>
+        <button type="button" id="reset-search-btn" class="reset-button">🔄 Reset</button>
+        <button type="button" id="show-recommendations" class="recommendation-button">💡 Rekomendasi</button>
+      </div>
+    </div>
+
+    <div id="search-results-info" class="search-results-info">
+      <!-- Search results info will appear here -->
+    </div>
+  </div>
+
+  <!-- FORM TAMBAH BUKU - HANYA UNTUK ADMIN/PETUGAS -->
+  <form id="addBookForm" aria-label="Form tambah buku baru">
+    <h2>Tambah/Edit Buku</h2>
+    
+    <div class="form-row">
+      <div class="form-group-wide">
+        <label for="judul">Judul Buku:</label>
+        <input type="text" id="judul" name="judul" required placeholder="Masukkan judul buku" />
+      </div>
+
+      <div class="form-group-wide">
+        <label for="tahunRilis">Tahun Rilis:</label>
+        <input type="number" id="tahunRilis" name="tahunRilis" required min="1000" max="2099" placeholder="Masukkan tahun rilis" />
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group-wide">
+        <label for="penulis">Penulis:</label>
+        <input type="text" id="penulis" name="penulis" required placeholder="Masukkan nama penulis" />
+      </div>
+
+      <div class="form-group-wide">
+        <label for="penerbit">Penerbit:</label>
+        <input type="text" id="penerbit" name="penerbit" required placeholder="Masukkan nama penerbit" />
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group-wide">
+        <label for="genre">Genre:</label>
+        <select id="genre" name="genre" required>
+          <option value="">--Pilih Genre--</option>
+          <option value="Fiksi">Fiksi</option>
+          <option value="NonFiksi">NonFiksi</option>
+          <option value="Komik">Komik</option>
+          <option value="Biografi">Biografi</option>
+          <option value="Sains">Sains</option>
+          <option value="Sejarah">Sejarah</option>
+          <option value="Fantasi">Fantasi</option>
+          <option value="Misteri">Misteri</option>
+        </select>
+      </div>
+
+      <div class="form-group-wide">
+        <label for="gambar">URL Gambar Sampul:</label>
+        <input type="url" id="gambar" name="gambar" required placeholder="URL gambar sampul buku" />
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group-wide">
+        <label for="deskripsi">Deskripsi Singkat:</label>
+        <textarea id="deskripsi" name="deskripsi" required placeholder="Deskripsi singkat buku" rows="3"></textarea>
+      </div>
+
+      <div class="form-group-wide">
+        <label for="isbn">ISBN:</label>
+        <input type="text" id="isbn" name="isbn" required placeholder="Nomor ISBN" />
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group-wide">
+        <label for="rating">Rating (0.0 - 5.0):</label>
+        <input type="number" id="rating" name="rating" required min="0" max="5" step="0.1" placeholder="Rating buku (contoh: 4.5)" />
+      </div>
+    </div>
+
+    <button type="submit" class="login-btn-wide">Tambah Buku 📚</button>
+  </form>
+
+  <!-- BOOK GRID CONTAINER -->
+  <div id="book-cards-container" class="book-grid">
+    <!-- Buku akan ditampilkan di sini -->
+  </div>
+
+  <!-- Modal untuk detail buku -->
+  <div id="book-detail-modal" class="modal">
+      <div class="modal-content">
+          <span class="close-button">&times;</span>
+          <div id="modal-body">
+              <!-- Detail buku akan dimuat di sini -->
+          </div>
+          <div class="modal-actions">
+              <button type="button" class="borrow-button hidden">Pinjam Buku 📖</button>
+              <button type="button" class="edit-book-button hidden">✏️ Edit</button>
+              <button type="button" class="delete-book-button hidden">🗑️ Hapus</button>
+              <button type="button" class="back-button">Kembali</button>
+          </div>
+      </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+  <script>
+    let allBooks = [];
+    let editingBookId = null;
+    let currentSearchResults = null;
+
+    function showNotification(message, type = 'success') {
+      Toastify({
+        text: message,
+        duration: 3000,
+        close: true,
+        gravity: "top",
+        position: "right",
+        backgroundColor: type === 'success' ? "linear-gradient(135deg, #28a745, #20c997)" : "linear-gradient(135deg, #dc3545, #e83e8c)",
+        stopOnFocus: true,
+      }).showToast();
+    }
+
+    // 🆕 ADVANCED SEARCH FUNCTIONALITY
+    async function performAdvancedSearch() {
+      const query = document.getElementById('search-query').value.trim();
+      const author = document.getElementById('search-author').value.trim();
+      const genre = document.getElementById('search-genre').value;
+      const year = document.getElementById('search-year').value;
+      const minRating = document.getElementById('search-rating').value;
+
+      // Build search URL dengan parameter
+      const params = new URLSearchParams();
+      if (query) params.append('q', query);
+      if (author) params.append('author', author);
+      if (genre) params.append('genre', genre);
+      if (year) params.append('year', year);
+      if (minRating) params.append('minRating', minRating);
+
+      try {
+        const response = await fetch(`/search?${params.toString()}`);
+        const result = await response.json();
+        
+        if (result.success) {
+          currentSearchResults = result.books;
+          displayBooks(currentSearchResults);
+          
+          // Update search results info
+          const resultsInfo = document.getElementById('search-results-info');
+          resultsInfo.innerHTML = `
+            <div class="results-summary">
+              <strong>${result.count}</strong> buku ditemukan 
+              ${query ? `untuk "${query}"` : ''}
+              ${genre ? ` dalam genre ${genre}` : ''}
+              ${minRating !== '0' ? ` dengan rating ${minRating}+` : ''}
+            </div>
+          `;
+          
+          if (result.count === 0) {
+            showNotification('Tidak ada buku yang sesuai dengan kriteria pencarian.', 'info');
+          } else {
+            showNotification(`Ditemukan ${result.count} buku yang sesuai.`, 'success');
+          }
+        } else {
+          showNotification('Gagal melakukan pencarian: ' + result.message, 'error');
+        }
+      } catch (error) {
+        console.error('Search error:', error);
+        showNotification('Terjadi kesalahan saat mencari.', 'error');
+      }
+    }
+
+    // 🆕 LOAD RECOMMENDATIONS
+    async function loadRecommendations() {
+      try {
+        const response = await fetch('/recommendations');
+        const result = await response.json();
+        
+        if (result.success) {
+          currentSearchResults = result.recommendations;
+          displayBooks(currentSearchResults);
+          
+          const resultsInfo = document.getElementById('search-results-info');
+          resultsInfo.innerHTML = `
+            <div class="results-summary">
+              <strong>${result.recommendations.length}</strong> rekomendasi buku untuk Anda
+            </div>
+          `;
+          
+          showNotification(`Memuat ${result.recommendations.length} rekomendasi buku.`, 'success');
+        }
+      } catch (error) {
+        console.error('Error loading recommendations:', error);
+        showNotification('Gagal memuat rekomendasi.', 'error');
+      }
+    }
+
+    // 🆕 RESET SEARCH
+    function resetSearch() {
+      document.getElementById('search-query').value = '';
+      document.getElementById('search-author').value = '';
+      document.getElementById('search-genre').value = '';
+      document.getElementById('search-year').value = '';
+      document.getElementById('search-rating').value = '0';
+      
+      document.getElementById('search-results-info').innerHTML = '';
+      currentSearchResults = null;
+      displayBooks(allBooks);
+      showNotification('Pencarian telah direset.', 'info');
+    }
+
+    function displayBooks(booksToDisplay) {
+      const bookCardsContainer = document.getElementById('book-cards-container');
+      const userRole = localStorage.getItem('userRole');
+      bookCardsContainer.innerHTML = '';
+
+      if (!booksToDisplay || booksToDisplay.length === 0) {
+        bookCardsContainer.innerHTML = '<p style="text-align:center; grid-column: 1 / -1; font-size: 1.2em; padding: 40px; color: var(--text-color);">Tidak ada buku ditemukan.</p>';
+        return;
+      }
+
+      booksToDisplay.forEach(buku => {
+        const bookCard = document.createElement('div');
+        bookCard.classList.add('book-card-item');
+        bookCard.setAttribute('data-id', buku.id);
+
+        let actionButtons = '';
+        if (userRole === 'admin' || userRole === 'petugas') {
+          actionButtons = `
+            <div class="book-actions">
+              <button type="button" class="edit-button" onclick="event.stopPropagation(); editBook(${buku.id})">Edit 📝</button>
+              <button type="button" class="delete-button" onclick="event.stopPropagation(); deleteBook(${buku.id})">Hapus 🗑️</button>
+            </div>
+          `;
+        }
+
+        bookCard.innerHTML = `
+            <img src="${buku.gambar || 'https://via.placeholder.com/300x400/667eea/ffffff?text=No+Cover'}" 
+                 alt="Sampul ${buku.judul}" 
+                 class="book-cover"
+                 onerror="this.src='https://via.placeholder.com/300x400/667eea/ffffff?text=No+Cover'">
+            <div class="book-info">
+                <h3>${buku.judul}</h3>
+                <p><strong>Penulis:</strong> ${buku.penulis}</p>
+                <p><strong>Tahun Rilis:</strong> ${buku.tahunRilis}</p>
+                <p><strong>Genre:</strong> ${buku.genre}</p>
+                <p><strong>Rating:</strong> ${'⭐'.repeat(Math.floor(buku.rating))} (${buku.rating}/5)</p>
+                <p><strong>Status:</strong> <span class="${buku.status === 'Tersedia' ? 'status-tersedia' : 'status-dipinjam'}">${buku.status}</span></p>
+                ${actionButtons}
+            </div>
+        `;
+        bookCardsContainer.appendChild(bookCard);
+
+        bookCard.addEventListener('click', () => showBookDetail(buku.id));
+      });
+      updateUIBasedOnRole();
+    }
+
+    async function fetchAndDisplayBooks() {
+      try {
+        const res = await fetch('/data');
+        if (res.status === 401) {
+          window.location.href = '/login';
+          return;
+        }
+        if (!res.ok) {
+          throw new Error(`HTTP error! status: ${res.status}`);
+        }
+        const data = await res.json();
+        allBooks = data;
+        displayBooks(allBooks);
+      } catch (err) {
+        console.error('Gagal ambil data:', err);
+        showNotification('Gagal memuat data buku. Pastikan server berjalan.', 'error');
+      }
+    }
+
+    async function showBookDetail(bookId) {
+        const modal = document.getElementById('book-detail-modal');
+        const modalBody = document.getElementById('modal-body');
+        const borrowButton = document.querySelector('.borrow-button');
+        const editBookButton = document.querySelector('.edit-book-button');
+        const deleteBookButton = document.querySelector('.delete-book-button');
+        const backButton = document.querySelector('.back-button');
+        const userRole = localStorage.getItem('userRole');
+
+        try {
+            const response = await fetch(`/book/${bookId}`);
+            const result = await response.json();
+
+            if (result.success) {
+                const book = result.book;
+                modalBody.innerHTML = `
+                    <div class="detail-header">
+                        <img src="${book.gambar || 'https://via.placeholder.com/250x350/667eea/ffffff?text=No+Cover'}" 
+                             alt="Sampul ${book.judul}" 
+                             class="detail-book-cover"
+                             onerror="this.src='https://via.placeholder.com/250x350/667eea/ffffff?text=No+Cover'">
+                        <div>
+                            <h2>${book.judul}</h2>
+                            <p><strong>Penulis:</strong> ${book.penulis}</p>
+                            <p><strong>Penerbit:</strong> ${book.penerbit}</p>
+                            <p><strong>Tahun Rilis:</strong> ${book.tahunRilis}</p>
+                            <p><strong>Genre:</strong> ${book.genre}</p>
+                            <p><strong>ISBN:</strong> ${book.isbn}</p>
+                            <p><strong>Rating:</strong> ${'⭐'.repeat(Math.floor(book.rating))} (${book.rating}/5)</p>
+                            <p><strong>Status:</strong> <span class="${book.status === 'Tersedia' ? 'status-tersedia' : 'status-dipinjam'}">${book.status}</span></p>
+                        </div>
+                    </div>
+                    <div class="detail-description">
+                        <h3>Deskripsi:</h3>
+                        <p>${book.deskripsi}</p>
+                    </div>
+                `;
+
+                // Reset semua button
+                borrowButton.style.display = 'none';
+                editBookButton.style.display = 'none';
+                deleteBookButton.style.display = 'none';
+
+                if (userRole === 'pengguna' && book.status === 'Tersedia') {
+                    borrowButton.style.display = 'inline-block';
+                    borrowButton.onclick = () => handleBorrowBook(book.id);
+                }
+
+                if (userRole === 'admin' || userRole === 'petugas') {
+                    editBookButton.style.display = 'inline-block';
+                    editBookButton.onclick = () => {
+                        modal.style.display = 'none';
+                        editBook(book.id);
+                    };
+                    deleteBookButton.style.display = 'inline-block';
+                    deleteBookButton.onclick = () => {
+                        modal.style.display = 'none';
+                        deleteBook(book.id);
+                    };
+                }
+
+                backButton.onclick = () => {
+                    modal.style.display = 'none';
+                };
+
+                modal.style.display = 'block';
+            } else {
+                showNotification(result.message, 'error');
+            }
+        } catch (error) {
+            console.error('Error fetching book detail:', error);
+            showNotification('Gagal memuat detail buku.', 'error');
+        }
+    }
+
+    // FUNGSI BARU: PINJAM BUKU DENGAN DURASI
+    async function handleBorrowBook(bookId) {
+        const durasiHari = prompt('Masukkan durasi peminjaman (hari):', '7');
+        if (!durasiHari || isNaN(durasiHari) || durasiHari < 1) {
+            showNotification('Durasi peminjaman tidak valid', 'error');
+            return;
+        }
+        
+        if (!confirm(`Apakah Anda yakin ingin meminjam buku ini selama ${durasiHari} hari?`)) {
+            return;
+        }
+        
+        try {
+            const response = await fetch(`/book/status/${bookId}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    status: 'Dipinjam',
+                    durasiHari: parseInt(durasiHari)
+                })
+            });
+            
+            const result = await response.json();
+            if (result.success) {
+                showNotification(result.message, 'success');
+                document.getElementById('book-detail-modal').style.display = 'none';
+                fetchAndDisplayBooks();
+            } else {
+                showNotification('Gagal meminjam buku: ' + result.message, 'error');
+            }
+        } catch (error) {
+            console.error('Error borrowing book:', error);
+            showNotification('Terjadi kesalahan saat meminjam buku.', 'error');
+        }
+    }
+
+    document.querySelector('.close-button').addEventListener('click', () => {
+        document.getElementById('book-detail-modal').style.display = 'none';
+    });
+
+    window.addEventListener('click', (event) => {
+        const modal = document.getElementById('book-detail-modal');
+        if (event.target === modal) {
+            modal.style.display = 'none';
+        }
+    });
+
+    async function deleteBook(id) {
+        if (!confirm('Apakah Anda yakin ingin menghapus buku ini?')) {
+            return;
+        }
+        try {
+            const response = await fetch(`/book/${id}`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+            const result = await response.json();
+            if (result.success) {
+                showNotification('Buku berhasil dihapus.', 'success');
+                fetchAndDisplayBooks();
+            } else {
+                showNotification('Gagal menghapus buku: ' + result.message, 'error');
+            }
+        } catch (error) {
+            console.error('Error during book deletion:', error);
+            showNotification('Terjadi kesalahan saat menghapus buku.', 'error');
+        }
+    }
+
+    async function editBook(id) {
+        const bookToEdit = allBooks.find(b => b.id === id);
+        if (bookToEdit) {
+            document.getElementById('judul').value = bookToEdit.judul;
+            document.getElementById('tahunRilis').value = bookToEdit.tahunRilis;
+            document.getElementById('penulis').value = bookToEdit.penulis;
+            document.getElementById('penerbit').value = bookToEdit.penerbit;
+            document.getElementById('genre').value = bookToEdit.genre;
+            document.getElementById('gambar').value = bookToEdit.gambar || '';
+            document.getElementById('deskripsi').value = bookToEdit.deskripsi || '';
+            document.getElementById('isbn').value = bookToEdit.isbn || '';
+            document.getElementById('rating').value = bookToEdit.rating || '';
+
+            document.querySelector('#addBookForm button[type="submit"]').textContent = 'Simpan Perubahan 💾';
+            editingBookId = id;
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        } else {
+            showNotification('Buku tidak ditemukan untuk diedit.', 'error');
+        }
+    }
+
+    function updateUIBasedOnRole() {
+      const userRole = localStorage.getItem('userRole');
+      const addBookForm = document.getElementById('addBookForm');
+      const welcomeMessageElement = document.getElementById('welcome-message');
+
+      if (userRole) {
+        const userName = localStorage.getItem('userName');
+        if (welcomeMessageElement) {
+            welcomeMessageElement.textContent = `Selamat datang, ${userName} (${userRole})!`;
+        }
+      }
+
+      // PERBAIKAN PENTING: Hanya admin/petugas yang bisa lihat form tambah buku
+      if (userRole === 'pengguna') {
+        if (addBookForm) addBookForm.style.display = 'none';
+      } else if (userRole === 'admin' || userRole === 'petugas') {
+        if (addBookForm) addBookForm.style.display = 'block';
+      } else {
+        if (addBookForm) addBookForm.style.display = 'none';
+      }
+    }
+
+    document.getElementById('addBookForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const form = e.target;
+      const formData = new FormData(form);
+      const data = Object.fromEntries(formData.entries());
+      const currentYear = new Date().getFullYear();
+
+      if (!data.judul || !data.tahunRilis || !data.penulis || !data.penerbit || !data.genre || !data.gambar || !data.deskripsi || !data.isbn || !data.rating) {
+        showNotification('Semua kolom harus diisi.', 'error');
+        return;
+      }
+      
+      const tahun = parseInt(data.tahunRilis, 10);
+      if (isNaN(tahun) || tahun < 1000 || tahun > currentYear) {
+        showNotification(`Tahun rilis harus angka antara 1000 sampai ${currentYear}.`, 'error');
+        return;
+      }
+      
+      const rating = parseFloat(data.rating);
+      if (isNaN(rating) || rating < 0 || rating > 5) {
+        showNotification('Rating harus angka antara 0.0 dan 5.0.', 'error');
+        return;
+      }
+
+      let url = '/book';
+      let method = 'POST';
+      let successMessage = 'Buku berhasil ditambahkan.';
+
+      if (editingBookId) {
+          url = `/book/${editingBookId}`;
+          method = 'PUT';
+          successMessage = 'Perubahan buku berhasil disimpan.';
+      }
+
+      try {
+        const response = await fetch(url, {
+          method: method,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data),
+        });
+        const result = await response.json();
+        if (result.success) {
+          showNotification(successMessage, 'success');
+          form.reset();
+          fetchAndDisplayBooks();
+          editingBookId = null;
+          document.querySelector('#addBookForm button[type="submit"]').textContent = 'Tambah Buku 📚';
+        } else {
+          showNotification('Gagal ' + (editingBookId ? 'mengubah' : 'menambahkan') + ' buku: ' + result.message, 'error');
+        }
+      } catch (error) {
+        showNotification('Terjadi kesalahan saat ' + (editingBookId ? 'mengubah' : 'menambahkan') + ' buku.', 'error');
+      }
+    });
+
+    // Dark mode ditangani global oleh /app.js
+
+    // 🆕 NAVIGATION UPDATE - DIPERBAIKI
+    function updateNav() {
+        const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
+        const navUsername = document.getElementById('nav-username');
+        const navLogout = document.getElementById('nav-logout');
+        const navLogin = document.getElementById('nav-login');
+        const navRegister = document.getElementById('nav-register');
+        const welcomeMessageElement = document.getElementById('welcome-message');
+        const navItems = document.querySelectorAll('nav ul li');
+        const currentPagePath = window.location.pathname;
+
+        // PASTIKAN SEMUA NAVIGATION ITEMS VISIBLE
+        navItems.forEach(item => {
+            item.style.display = 'flex';
+            item.style.visibility = 'visible';
+            item.style.opacity = '1';
+        });
+
+        if (isLoggedIn) {
+            const userName = localStorage.getItem('userName');
+            const userRole = localStorage.getItem('userRole');
+
+            if (navUsername) {
+                navUsername.style.display = 'flex';
+                navUsername.textContent = `👋 Halo, ${userName} (${userRole})`;
+            }
+
+            if (navLogout) {
+                navLogout.style.display = 'flex';
+            }
+            
+            if (navLogin) {
+                navLogin.style.display = 'none';
+            }
+
+            if (navRegister) {
+                navRegister.style.display = 'none';
+            }
+
+            if (welcomeMessageElement) {
+                welcomeMessageElement.textContent = `Selamat datang, ${userName} (${userRole})!`;
+            }
+
+        } else {
+            if (navUsername) {
+                navUsername.style.display = 'none';
+            }
+            
+            if (navLogout) {
+                navLogout.style.display = 'none';
+            }
+            
+            if (navLogin) {
+                navLogin.style.display = 'flex';
+            }
+
+            if (navRegister) {
+                navRegister.style.display = 'flex';
+            }
+
+            if (welcomeMessageElement) {
+                welcomeMessageElement.textContent = '';
+            }
+        }
+
+        // Hide current page link
+        navItems.forEach(item => {
+            const page = item.dataset.page;
+            if (currentPagePath === '/Catalog.html' || currentPagePath === '/catalog') {
+                if (page === 'catalog') {
+                    item.style.display = 'none';
+                }
+            }
+        });
+    }
+
+    async function handleLogout(event) {
+        event.preventDefault();
+        try {
+            const response = await fetch('/logout', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+            const result = await response.json();
+            if (result.success) {
+                localStorage.clear();
+                showNotification('👋 Anda telah berhasil logout.', 'success');
+                window.location.href = '/login';
+            } else {
+                showNotification('❌ Gagal logout: ' + result.message, 'error');
+            }
+        } catch (error) {
+            console.error('Error during logout:', error);
+            showNotification('❌ Terjadi kesalahan saat logout.', 'error');
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        // CEK LOGIN DENGAN LEBIH KETAT
+        const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
+        const userRole = localStorage.getItem('userRole');
+        const userName = localStorage.getItem('userName');
+        
+        if (!isLoggedIn || !userRole || !userName) {
+            window.location.href = '/login';
+            return;
+        }
+
+        updateNav();
+        fetchAndDisplayBooks();
+
+        const logoutLink = document.getElementById('logout-link');
+        if (logoutLink) {
+            logoutLink.addEventListener('click', handleLogout);
+        }
+
+        // 🆕 EVENT LISTENERS UNTUK ADVANCED SEARCH
+        document.getElementById('advanced-search-btn').addEventListener('click', performAdvancedSearch);
+        document.getElementById('reset-search-btn').addEventListener('click', resetSearch);
+        document.getElementById('show-recommendations').addEventListener('click', loadRecommendations);
+
+        // Enter key untuk search
+        document.getElementById('search-query').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                performAdvancedSearch();
+            }
+        });
+
+        // Handle URL hash untuk langsung buka book detail
+        if (window.location.hash) {
+            const bookId = window.location.hash.replace('#book-', '');
+            if (bookId && !isNaN(bookId)) {
+                setTimeout(() => showBookDetail(parseInt(bookId)), 500);
+            }
+        }
+    });
+  </script>
+    <script src="js/app.js"></script>
+</body>
+</html>

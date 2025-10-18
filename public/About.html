@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <title>ℹ️ Tentang Kami - Sistem Informasi Perpustakaan</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+    <link rel="stylesheet" href="css/Style.css">
+</head>
+<body>
+    <nav>
+        <ul>
+            <li data-page="home"><a href="/">🏠 Home</a></li>
+            <li data-page="dashboard"><a href="/Dashboard.html">📊 Dashboard</a></li>
+            <li data-page="catalog"><a href="/Catalog.html">📚 Katalog Buku</a></li>
+            <li data-page="loan-history"><a href="/LoanHistory.html">📋 Riwayat Pinjam</a></li>
+            <li data-page="about"><a href="/about">ℹ️ About</a></li>
+
+            <!-- Untuk user belum login -->
+            <li id="nav-login" class="nav-fade"><a href="/login">🚪 Login</a></li>
+            <li id="nav-register" class="nav-fade"><a href="/register">📝 Daftar</a></li>
+
+            <!-- Untuk user sudah login -->
+            <li id="nav-username" class="nav-fade" ></li>
+            <li id="nav-logout" class="nav-fade" >
+              <a href="#" id="logout-link">🚪 Logout</a>
+            </li>
+        </ul>
+    </nav>
+
+    <div class="toggle-container">
+        <button id="mode-toggle" aria-label="Toggle mode gelap/terang">🌓 Mode Gelap</button>
+    </div>
+
+    <h1>ℹ️ Tentang Sistem Informasi Perpustakaan</h1>
+
+    <div class="content-container">
+        <h2>Visi Kami</h2>
+        <p>Menjadi pusat informasi dan pengetahuan yang terdepan, menyediakan akses mudah dan cepat ke berbagai sumber daya literasi untuk mendukung pendidikan, penelitian, dan pengembangan diri masyarakat.</p>
+
+        <h2>Misi Kami</h2>
+        <ul>
+            <li>Menyediakan koleksi buku dan materi digital yang relevan dan mutakhir.</li>
+            <li>Mengembangkan sistem pengelolaan perpustakaan yang efisien dan user-friendly.</li>
+            <li>Meningkatkan minat baca dan literasi di kalangan masyarakat.</li>
+            <li>Menjadi sarana pendukung pembelajaran sepanjang hayat.</li>
+        </ul>
+
+        <h2>Fitur Utama Sistem</h2>
+        <ul>
+            <li><strong>📚 Katalog Buku Interaktif:</strong> Cari dan filter buku berdasarkan judul, penulis, genre, dan tahun rilis.</li>
+            <li><strong>📝 Manajemen Peminjaman:</strong> Lacak status ketersediaan buku dan kelola peminjaman/pengembalian.</li>
+            <li><strong>🌓 Mode Gelap/Terang:</strong> Sesuaikan tampilan aplikasi sesuai preferensi pengguna.</li>
+            <li><strong>🔑 Autentikasi Pengguna:</strong> Sistem login untuk admin, petugas, dan pengguna biasa dengan hak akses berbeda.</li>
+            <li><strong>➕ Penambahan Buku Baru:</strong> Admin/petugas dapat menambahkan data buku ke dalam sistem.</li>
+        </ul>
+
+        <h2>Kontak Kami</h2>
+        <p>Jika Anda memiliki pertanyaan atau saran, jangan ragu untuk menghubungi kami melalui email di <a href="mailto:info@perpustakaan.com">📧 info@perpustakaan.com</a> atau kunjungi kami di alamat:</p>
+        <p>📍 Jl. Ilmu Pengetahuan No. 1, Kota Literasi, 12345</p>
+    </div>
+
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+    <script>
+        function showNotification(message, type = 'success') {
+            Toastify({
+                text: message,
+                duration: 3000,
+                close: true,
+                gravity: "top",
+                position: "right",
+                backgroundColor: type === 'success' ? "linear-gradient(to right, #28a745, #218838)" : "linear-gradient(to right, #dc3545, #c82333)",
+                stopOnFocus: true,
+            }).showToast();
+        }
+
+        // Dark mode ditangani global oleh /app.js
+
+        // NAVIGATION: tampilkan hanya About + Login/Daftar saat belum login
+        function updateNav() {
+            const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
+            const navUsername = document.getElementById('nav-username');
+            const navLogout = document.getElementById('nav-logout');
+            const navLogin = document.getElementById('nav-login');
+            const navRegister = document.getElementById('nav-register');
+            const navItems = document.querySelectorAll('nav ul li');
+
+            // Reset tampil
+            navItems.forEach(item => {
+                item.style.display = 'flex';
+                item.style.visibility = 'visible';
+                item.style.opacity = '1';
+            });
+
+            if (isLoggedIn) {
+                const userName = localStorage.getItem('userName');
+                const userRole = localStorage.getItem('userRole');
+
+                if (navUsername) {
+                    navUsername.style.display = 'flex';
+                    navUsername.textContent = `👋 Halo, ${userName} (${userRole})`;
+                }
+                if (navLogout) navLogout.style.display = 'flex';
+                if (navLogin) navLogin.style.display = 'none';
+                if (navRegister) navRegister.style.display = 'none';
+
+            } else {
+                // Belum login: sembunyikan Home/Dashboard/Catalog/LoanHistory — About tetap ada
+                document.querySelectorAll('nav [data-page="home"], nav [data-page="dashboard"], nav [data-page="catalog"], nav [data-page="loan-history"]').forEach(el => el.style.display = 'none');
+                if (navUsername) navUsername.style.display = 'none';
+                if (navLogout) navLogout.style.display = 'none';
+                if (navLogin) navLogin.style.display = 'flex';
+                if (navRegister) navRegister.style.display = 'flex';
+            }
+
+            // Sembunyikan link halaman saat ini (About)
+            const aboutItem = document.querySelector('nav [data-page="about"]');
+            if (aboutItem) aboutItem.style.display = 'none';
+        }
+
+        async function handleLogout(event) {
+            event.preventDefault();
+            try {
+                const response = await fetch('/logout', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                const result = await response.json();
+                if (result.success) {
+                    localStorage.clear();
+                    showNotification('👋 Anda telah berhasil logout.', 'success');
+                    window.location.href = '/login';
+                } else {
+                    showNotification('❌ Gagal logout: ' + result.message, 'error');
+                }
+            } catch (error) {
+                console.error('Error during logout:', error);
+                showNotification('❌ Terjadi kesalahan saat logout.', 'error');
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // About bisa diakses tanpa login. Tampilkan nav sesuai status.
+            updateNav();
+
+            const logoutLink = document.getElementById('logout-link');
+            if (logoutLink) {
+                logoutLink.addEventListener('click', handleLogout);
+            }
+        });
+    </script>
+    <script src="js/app.js"></script>
+</body>
+</html>

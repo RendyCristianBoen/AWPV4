@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Daftar Akun - Sistem Informasi Perpustakaan</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css" />
+    <link rel="stylesheet" href="css/Style.css">
+</head>
+<body>
+    <!-- NAVIGATION - FIXED -->
+    <nav>
+        <ul>
+            <li data-page="home"><a href="/">🏠 Home</a></li>
+            <li data-page="about"><a href="/about">ℹ️ About</a></li>
+
+            <!-- Navigation untuk user yang belum login -->
+            <li id="nav-login" class="nav-fade">
+                <a href="/login">🚪 Login</a>
+            </li>
+            <li id="nav-register" class="nav-fade">
+                <a href="/register">📝 Daftar</a>
+            </li>
+
+            <!-- Navigation untuk user yang sudah login -->
+            <li id="nav-username" class="nav-fade"></li>
+            <li id="nav-logout" class="nav-fade">
+                <a href="#" id="logout-link">🚪 Logout</a>
+            </li>
+        </ul>
+    </nav>
+
+    <div class="toggle-container">
+        <button id="mode-toggle" aria-label="Toggle mode gelap/terang">🌓 Mode Gelap</button>
+    </div>
+
+    <!-- HERO SECTION -->
+    <div class="login-hero">
+        <div class="hero-content">
+            <h1>📚 Daftar Akun Baru</h1>
+            <p>Bergabunglah dengan komunitas pembaca kami dan nikmati akses ke 100+ buku berkualitas</p>
+            <div class="hero-stats">
+                <div class="stat-item">
+                    <span class="stat-number">100+</span>
+                    <span class="stat-label">Buku Lengkap</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number">8+</span>
+                    <span class="stat-label">Genre Beragam</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number">⭐ 4.5+</span>
+                    <span class="stat-label">Rating Tinggi</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- REGISTER CONTAINER -->
+    <div class="login-container-wide">
+        <div class="login-card">
+            <div class="login-header">
+                <h2>📝 Daftar Akun Baru</h2>
+                <p>Isi form berikut untuk membuat akun baru</p>
+            </div>
+
+            <form id="registerForm" class="wide-form">
+                <div class="form-row">
+                    <div class="form-group-wide">
+                        <label for="nama">👤 Nama Lengkap:</label>
+                        <input type="text" id="nama" name="nama" required placeholder="Masukkan nama lengkap Anda" />
+                        <div class="error-message" id="namaError"></div>
+                    </div>
+
+                    <div class="form-group-wide">
+                        <label for="username">🔑 Username:</label>
+                        <input type="text" id="username" name="username" required placeholder="Buat username unik" />
+                        <div class="error-message" id="usernameError"></div>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group-wide">
+                        <label for="email">📧 Email:</label>
+                        <input type="email" id="email" name="email" required placeholder="contoh@email.com" />
+                        <div class="error-message" id="emailError"></div>
+                    </div>
+
+                    <div class="form-group-wide">
+                        <label for="telepon">📞 No. Telepon (Opsional):</label>
+                        <input type="tel" id="telepon" name="telepon" placeholder="081234567890" />
+                        <div class="error-message" id="teleponError"></div>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group-wide">
+                        <label for="password">🔒 Password:</label>
+                        <input type="password" id="password" name="password" required placeholder="Minimal 6 karakter" />
+                        <div class="error-message" id="passwordError"></div>
+                        <div id="passwordStrength" class="password-strength"></div>
+                    </div>
+
+                    <div class="form-group-wide">
+                        <label for="confirmPassword">🔁 Konfirmasi Password:</label>
+                        <input type="password" id="confirmPassword" name="confirmPassword" required placeholder="Ketik ulang password" />
+                        <div class="error-message" id="confirmPasswordError"></div>
+                    </div>
+                </div>
+
+                <div class="form-group-wide">
+                    <label for="alamat">🏠 Alamat (Opsional):</label>
+                    <textarea id="alamat" name="alamat" rows="3" placeholder="Masukkan alamat lengkap"></textarea>
+                    <div class="error-message" id="alamatError"></div>
+                </div>
+
+                <div class="form-group-wide">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="agreeTerms" name="agreeTerms" required />
+                        <span>Saya menyetujui <a href="#" class="terms-link">syarat dan ketentuan</a> yang berlaku</span>
+                    </label>
+                    <div class="error-message" id="termsError"></div>
+                </div>
+
+                <button type="submit" class="login-btn-wide">📝 Daftar Sekarang</button>
+
+                <div class="login-link-container">
+                    <p class="login-link-text">Sudah punya akun? 
+                        <a href="/login" class="login-link">Login di sini</a>
+                    </p>
+                </div>
+            </form>
+
+            <!-- Info pengguna: gunakan form di atas untuk mendaftar akun. -->
+            <p class="text-center" >
+                <strong>Gunakan form di atas untuk membuat akun pengguna baru.</strong>
+            </p>
+        </div>
+    </div>
+
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+    <script>
+        function showNotification(message, type = 'success') {
+            Toastify({
+                text: message,
+                duration: 5000,
+                close: true,
+                gravity: 'top',
+                position: 'right',
+                backgroundColor: type === 'success' 
+                    ? 'linear-gradient(135deg, #28a745, #20c997)'
+                    : 'linear-gradient(135deg, #dc3545, #e83e8c)',
+                stopOnFocus: true,
+            }).showToast();
+        }
+
+        // Password strength indicator
+        function checkPasswordStrength(password) {
+            const strongRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#\$%\^&\*])(?=.{8,})/;
+            const mediumRegex = /^(((?=.*[a-z])(?=.*[A-Z]))|((?=.*[a-z])(?=.*[0-9]))|((?=.*[A-Z])(?=.*[0-9])))(?=.{6,})/;
+            
+            if (strongRegex.test(password)) {
+                return { strength: 'strong', color: '#28a745', text: 'Kuat' };
+            } else if (mediumRegex.test(password)) {
+                return { strength: 'medium', color: '#ffc107', text: 'Sedang' };
+            } else {
+                return { strength: 'weak', color: '#dc3545', text: 'Lemah' };
+            }
+        }
+
+        // Real-time password validation
+        document.getElementById('password').addEventListener('input', function() {
+            const password = this.value;
+            const strengthIndicator = document.getElementById('passwordStrength');
+            
+            const strength = checkPasswordStrength(password);
+            
+            if (password.length > 0) {
+                strengthIndicator.innerHTML = `Kekuatan password: <span style="color: ${strength.color}; font-weight: bold;">${strength.text}</span>`;
+                strengthIndicator.style.display = 'block';
+                
+                // Update border color based on strength
+                if (password.length < 6) {
+                    this.style.borderColor = '#dc3545';
+                } else if (strength.strength === 'weak') {
+                    this.style.borderColor = '#dc3545';
+                } else if (strength.strength === 'medium') {
+                    this.style.borderColor = '#ffc107';
+                } else {
+                    this.style.borderColor = '#28a745';
+                }
+            } else {
+                strengthIndicator.style.display = 'none';
+                this.style.borderColor = '';
+            }
+        });
+
+        // Confirm password validation
+        document.getElementById('confirmPassword').addEventListener('input', function() {
+            const password = document.getElementById('password').value;
+            const confirmPassword = this.value;
+            const errorElement = document.getElementById('confirmPasswordError');
+            
+            if (confirmPassword && password !== confirmPassword) {
+                errorElement.textContent = 'Password tidak cocok';
+                errorElement.style.display = 'block';
+                this.style.borderColor = '#dc3545';
+            } else if (confirmPassword) {
+                errorElement.style.display = 'none';
+                this.style.borderColor = '#28a745';
+            } else {
+                errorElement.style.display = 'none';
+                this.style.borderColor = '';
+            }
+        });
+
+        // Form submission
+        document.getElementById('registerForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            // Reset error messages
+            document.querySelectorAll('.error-message').forEach(el => {
+                el.style.display = 'none';
+            });
+
+            // Reset border colors
+            document.querySelectorAll('input').forEach(input => {
+                input.style.borderColor = '';
+            });
+
+            // Get form values
+            const nama = document.getElementById('nama').value;
+            const username = document.getElementById('username').value;
+            const email = document.getElementById('email').value;
+            const telepon = document.getElementById('telepon').value;
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            const alamat = document.getElementById('alamat').value;
+            const agreeTerms = document.getElementById('agreeTerms').checked;
+
+            let hasError = false;
+
+            // Validation
+            if (!nama) {
+                document.getElementById('namaError').textContent = 'Nama lengkap harus diisi.';
+                document.getElementById('namaError').style.display = 'block';
+                document.getElementById('nama').style.borderColor = '#dc3545';
+                hasError = true;
+            }
+
+            if (!username) {
+                document.getElementById('usernameError').textContent = 'Username harus diisi.';
+                document.getElementById('usernameError').style.display = 'block';
+                document.getElementById('username').style.borderColor = '#dc3545';
+                hasError = true;
+            } else if (username.length < 3) {
+                document.getElementById('usernameError').textContent = 'Username minimal 3 karakter.';
+                document.getElementById('usernameError').style.display = 'block';
+                document.getElementById('username').style.borderColor = '#dc3545';
+                hasError = true;
+            }
+
+            if (!email) {
+                document.getElementById('emailError').textContent = 'Email harus diisi.';
+                document.getElementById('emailError').style.display = 'block';
+                document.getElementById('email').style.borderColor = '#dc3545';
+                hasError = true;
+            } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                document.getElementById('emailError').textContent = 'Format email tidak valid.';
+                document.getElementById('emailError').style.display = 'block';
+                document.getElementById('email').style.borderColor = '#dc3545';
+                hasError = true;
+            }
+
+            if (!password) {
+                document.getElementById('passwordError').textContent = 'Password harus diisi.';
+                document.getElementById('passwordError').style.display = 'block';
+                document.getElementById('password').style.borderColor = '#dc3545';
+                hasError = true;
+            } else if (password.length < 6) {
+                document.getElementById('passwordError').
+                document.getElementById('passwordError').textContent = 'Password minimal 6 karakter.';
+                document.getElementById('passwordError').style.display = 'block';
+                document.getElementById('password').style.borderColor = '#dc3545';
+                hasError = true;
+            }
+
+            if (!confirmPassword) {
+                document.getElementById('confirmPasswordError').textContent = 'Konfirmasi password harus diisi.';
+                document.getElementById('confirmPasswordError').style.display = 'block';
+                document.getElementById('confirmPassword').style.borderColor = '#dc3545';
+                hasError = true;
+            } else if (password !== confirmPassword) {
+                document.getElementById('confirmPasswordError').textContent = 'Password tidak cocok.';
+                document.getElementById('confirmPasswordError').style.display = 'block';
+                document.getElementById('confirmPassword').style.borderColor = '#dc3545';
+                hasError = true;
+            }
+
+            if (!agreeTerms) {
+                document.getElementById('termsError').textContent = 'Anda harus menyetujui syarat dan ketentuan.';
+                document.getElementById('termsError').style.display = 'block';
+                hasError = true;
+            }
+
+            // Phone validation (if provided)
+            if (telepon && !/^[0-9+\-\s()]{10,15}$/.test(telepon)) {
+                document.getElementById('teleponError').textContent = 'Format nomor telepon tidak valid.';
+                document.getElementById('teleponError').style.display = 'block';
+                document.getElementById('telepon').style.borderColor = '#dc3545';
+                hasError = true;
+            }
+
+            if (hasError) {
+                showNotification('Terdapat kesalahan dalam pengisian form. Silakan periksa kembali.', 'error');
+                return;
+            }
+
+            // Prepare data for submission
+            const formData = {
+                nama: nama.trim(),
+                username: username.trim(),
+                email: email.trim(),
+                telepon: telepon ? telepon.trim() : '',
+                password: password,
+                alamat: alamat ? alamat.trim() : '',
+                role: 'user' // Default role for new registrations
+            };
+
+            try {
+                // Show loading state
+                const submitBtn = document.querySelector('.login-btn-wide');
+                const originalText = submitBtn.textContent;
+                submitBtn.textContent = 'Mendaftarkan...';
+                submitBtn.disabled = true;
+
+                // Call backend register endpoint
+                const response = await fetch('/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                // Simulate processing time
+                await new Promise(resolve => setTimeout(resolve, 1500));
+
+                if (response.ok) {
+                    const result = await response.json();
+                    showNotification('Pendaftaran berhasil! Silakan login dengan akun Anda.', 'success');
+                    
+                    // Redirect to login page after successful registration
+                    setTimeout(() => {
+                        window.location.href = '/login';
+                    }, 2000);
+                } else {
+                    const error = await response.json();
+                    showNotification(error.message || 'Terjadi kesalahan saat pendaftaran.', 'error');
+                }
+
+            } catch (error) {
+                console.error('Registration error:', error);
+                showNotification('Terjadi kesalahan jaringan. Silakan coba lagi.', 'error');
+            } finally {
+                // Restore button state
+                const submitBtn = document.querySelector('.login-btn-wide');
+                submitBtn.textContent = originalText;
+                submitBtn.disabled = false;
+            }
+        });
+
+        // Real-time validation for other fields
+        document.getElementById('nama').addEventListener('blur', function() {
+            if (!this.value.trim()) {
+                document.getElementById('namaError').textContent = 'Nama lengkap harus diisi.';
+                document.getElementById('namaError').style.display = 'block';
+                this.style.borderColor = '#dc3545';
+            } else {
+                document.getElementById('namaError').style.display = 'none';
+                this.style.borderColor = '#28a745';
+            }
+        });
+
+        document.getElementById('username').addEventListener('blur', function() {
+            const username = this.value.trim();
+            if (!username) {
+                document.getElementById('usernameError').textContent = 'Username harus diisi.';
+                document.getElementById('usernameError').style.display = 'block';
+                this.style.borderColor = '#dc3545';
+            } else if (username.length < 3) {
+                document.getElementById('usernameError').textContent = 'Username minimal 3 karakter.';
+                document.getElementById('usernameError').style.display = 'block';
+                this.style.borderColor = '#dc3545';
+            } else {
+                document.getElementById('usernameError').style.display = 'none';
+                this.style.borderColor = '#28a745';
+            }
+        });
+
+        document.getElementById('email').addEventListener('blur', function() {
+            const email = this.value.trim();
+            if (!email) {
+                document.getElementById('emailError').textContent = 'Email harus diisi.';
+                document.getElementById('emailError').style.display = 'block';
+                this.style.borderColor = '#dc3545';
+            } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                document.getElementById('emailError').textContent = 'Format email tidak valid.';
+                document.getElementById('emailError').style.display = 'block';
+                this.style.borderColor = '#dc3545';
+            } else {
+                document.getElementById('emailError').style.display = 'none';
+                this.style.borderColor = '#28a745';
+            }
+        });
+
+        // Terms and conditions link
+        document.querySelector('.terms-link').addEventListener('click', function(e) {
+            e.preventDefault();
+            showNotification('Fitur syarat dan ketentuan akan segera tersedia.', 'info');
+        });
+
+        // Dark mode ditangani terpusat oleh /app.js (attachModeToggle)
+        // Tidak perlu handler duplikat di halaman ini.
+
+        // NAV: Saat belum login, tampilkan hanya About + Login/Daftar
+        function updateNavigation() {
+            const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
+            const navLogin = document.getElementById('nav-login');
+            const navRegister = document.getElementById('nav-register');
+            const navUsername = document.getElementById('nav-username');
+            const navLogout = document.getElementById('nav-logout');
+
+            // Reset tampil
+            document.querySelectorAll('nav ul li').forEach(item => item.style.display = 'flex');
+
+            if (isLoggedIn) {
+                const userName = localStorage.getItem('userName');
+                const userRole = localStorage.getItem('userRole');
+                if (navLogin) navLogin.style.display = 'none';
+                if (navRegister) navRegister.style.display = 'none';
+                if (navUsername) {
+                    navUsername.textContent = `👋 Halo, ${userName} (${userRole})`;
+                    navUsername.style.display = 'flex';
+                }
+                if (navLogout) navLogout.style.display = 'flex';
+            } else {
+                // Sembunyikan Home/Dashboard/Catalog/LoanHistory
+                document.querySelectorAll('nav [data-page="home"], nav [data-page="dashboard"], nav [data-page="catalog"], nav [data-page="loan-history"]').forEach(el => el.style.display = 'none');
+                if (navUsername) navUsername.style.display = 'none';
+                if (navLogout) navLogout.style.display = 'none';
+                if (navLogin) navLogin.style.display = 'flex';
+                if (navRegister) navRegister.style.display = 'flex';
+                // Sembunyikan link halaman saat ini (Daftar)
+                const currentItem = document.querySelector('nav [href="/register"]')?.parentElement;
+                if (currentItem) currentItem.style.display = 'none';
+            }
+        }
+
+        // Logout functionality
+        document.getElementById('logout-link').addEventListener('click', function(e) {
+            e.preventDefault();
+            localStorage.removeItem('user');
+            localStorage.removeItem('token');
+            showNotification('Logout berhasil!', 'success');
+            updateNavigation();
+            setTimeout(() => {
+                window.location.href = '/';
+            }, 1000);
+        });
+
+        // Initialize navigation on page load
+        updateNavigation();
+
+        // Add some interactive effects
+        document.querySelectorAll('input, textarea').forEach(element => {
+            element.addEventListener('focus', function() {
+                this.style.transform = 'scale(1.02)';
+                this.style.boxShadow = '0 0 0 3px rgba(0, 123, 255, 0.1)';
+            });
+
+            element.addEventListener('blur', function() {
+                this.style.transform = 'scale(1)';
+                this.style.boxShadow = '';
+            });
+        });
+
+        // Demo account quick fill (for testing)
+        document.querySelector('.admin-card').addEventListener('click', function() {
+            document.getElementById('username').value = 'admin';
+            document.getElementById('password').value = 'admin123';
+            document.getElementById('confirmPassword').value = 'admin123';
+            showNotification('Kredensial demo telah diisi. Ingat, ini hanya untuk testing!', 'info');
+        });
+    </script>
+    <script src="js/app.js"></script>
+</body>
+</html>

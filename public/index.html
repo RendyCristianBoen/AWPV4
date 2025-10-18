@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <title>🏠 Sistem Informasi Perpustakaan</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+    <link rel="stylesheet" href="css/Style.css">
+</head>
+<body>
+    <!-- NAVIGATION - FIXED -->
+    <nav>
+        <ul>
+            <li data-page="home"><a href="/">🏠 Home</a></li>
+            <li data-page="dashboard"><a href="/Dashboard.html">📊 Dashboard</a></li>
+            <li data-page="catalog"><a href="/Catalog.html">📚 Katalog Buku</a></li>
+            <li data-page="loan-history"><a href="/LoanHistory.html">📋 Riwayat Pinjam</a></li>
+            <li data-page="about"><a href="/about">ℹ️ About</a></li>
+
+            <!-- Navigation untuk user yang belum login -->
+            <li id="nav-login" class="nav-fade">
+                <a href="/login">🚪 Login</a>
+            </li>
+            <li id="nav-register" class="nav-fade">
+                <a href="/register">📝 Daftar</a>
+            </li>
+
+            <!-- Navigation untuk user yang sudah login -->
+            <li id="nav-username" class="nav-fade"></li>
+            <li id="nav-logout" class="nav-fade">
+                <a href="#" id="logout-link">🚪 Logout</a>
+            </li>
+        </ul>
+    </nav>
+
+    <div class="toggle-container">
+        <button id="mode-toggle" aria-label="Toggle mode gelap/terang">🌓 Mode Gelap</button>
+    </div>
+
+    <!-- HERO SECTION BARU -->
+    <div class="login-hero">
+        <div class="hero-content">
+            <h1>📖 Jelajahi Dunia Literasi</h1>
+            <p>Temukan 100+ buku berkualitas dari berbagai genre dengan rating tertinggi</p>
+            <div class="hero-stats">
+                <div class="stat-item">
+                    <span class="stat-number">100+</span>
+                    <span class="stat-label">Buku Lengkap</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number">8+</span>
+                    <span class="stat-label">Genre Beragam</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number">⭐ 4.5+</span>
+                    <span class="stat-label">Rating Tinggi</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <h1>📚 Pinjam Buku - Sistem Informasi Perpustakaan</h1>
+    <p id="welcome-message" class="center-text"></p>
+
+    <!-- Hanya menampilkan buku populer -->
+    <div class="content-container">
+        <h3>✨ Buku Populer</h3>
+        <div id="popular-books" class="book-grid">
+            <!-- Buku populer akan dimuat di sini -->
+        </div>
+    </div>
+
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+    <script>
+        // Fungsi untuk menampilkan notifikasi
+        function showNotification(message, type = 'success') {
+            Toastify({
+                text: message,
+                duration: 3000,
+                close: true,
+                gravity: "top",
+                position: "right",
+                backgroundColor: type === 'success' ? "linear-gradient(135deg, #28a745, #20c997)" : "linear-gradient(135deg, #dc3545, #e83e8c)",
+                stopOnFocus: true,
+            }).showToast();
+        }
+
+        // Fungsi untuk menampilkan buku populer/terbaru
+        async function fetchPopularBooks() {
+            try {
+                const res = await fetch('/data');
+                if (res.status === 401) {
+                    window.location.href = '/login';
+                    return;
+                }
+                if (!res.ok) {
+                    throw new Error(`HTTP error! status: ${res.status}`);
+                }
+                const data = await res.json();
+                // Ambil 4 buku dengan rating tertinggi sebagai buku populer
+                const popularBooks = data.sort((a, b) => b.rating - a.rating).slice(0, 4);
+
+                const popularBooksContainer = document.getElementById('popular-books');
+                popularBooksContainer.innerHTML = '';
+
+                if (popularBooks.length === 0) {
+                    popularBooksContainer.innerHTML = '<p style="text-align:center; grid-column: 1 / -1;">Tidak ada buku populer yang tersedia.</p>';
+                    return;
+                }
+
+                const userRole = localStorage.getItem('userRole');
+                
+                popularBooks.forEach(book => {
+                    const bookCard = document.createElement('div');
+                    bookCard.classList.add('book-card-item');
+                    bookCard.setAttribute('data-id', book.id);
+
+                    let actionButton = '';
+                    if (userRole === 'pengguna' && book.status === 'Tersedia') {
+                        // Tombol pinjam untuk pengguna
+                        actionButton = `<button class="borrow-button" onclick="handleBorrowBook(${book.id})">Pinjam Buku 📖</button>`;
+                    } else if (userRole === 'admin' || userRole === 'petugas') {
+                        // Tombol untuk admin/petugas
+                        actionButton = `
+                            <button class="status-button" onclick="changeBookStatus(${book.id}, '${book.status === 'Tersedia' ? 'Dipinjam' : 'Tersedia'}')">
+                                ${book.status === 'Tersedia' ? 'Pinjam 📖' : 'Kembalikan 📚'}
+                            </button>
+                        `;
+                    }
+
+                    bookCard.innerHTML = `
+                        <img src="${book.gambar || 'https://via.placeholder.com/300x400/667eea/ffffff?text=No+Cover'}" alt="Sampul ${book.judul}" class="book-cover">
+                        <div class="book-info">
+                            <h3>${book.judul}</h3>
+                            <p><strong>Penulis:</strong> ${book.penulis}</p>
+                            <p><strong>Genre:</strong> ${book.genre}</p>
+                            <p><strong>Tahun:</strong> ${book.tahunRilis}</p>
+                            <p><strong>Rating:</strong> ${'⭐'.repeat(Math.floor(book.rating))} (${book.rating}/5)</p>
+                            <p><strong>Status:</strong> <span class="${book.status === 'Tersedia' ? 'status-tersedia' : 'status-dipinjam'}">${book.status}</span></p>
+                            <div class="book-actions">${actionButton}</div>
+                        </div>
+                    `;
+                    popularBooksContainer.appendChild(bookCard);
+                });
+
+            } catch (error) {
+                console.error('Gagal memuat buku populer:', error);
+                const popularBooksContainer = document.getElementById('popular-books');
+                popularBooksContainer.innerHTML = '<p style="text-align:center; grid-column: 1 / -1;">Gagal memuat buku populer.</p>';
+            }
+        }
+
+        // Fungsi pinjam buku (langsung ubah status via API)
+        async function handleBorrowBook(bookId) {
+            if (!confirm('Apakah Anda yakin ingin meminjam buku ini?')) {
+                return;
+            }
+            try {
+                const response = await fetch(`/book/status/${bookId}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status: 'Dipinjam' })
+                });
+                const result = await response.json();
+                if (result.success) {
+                    showNotification(`Buku "${result.book.judul}" berhasil dipinjam!`, 'success');
+                    fetchPopularBooks(); // Refresh list buku populer
+                } else {
+                    showNotification('Gagal meminjam buku: ' + result.message, 'error');
+                }
+            } catch (error) {
+                console.error('Error borrowing book:', error);
+                showNotification('Terjadi kesalahan saat meminjam buku.', 'error');
+            }
+        }
+
+        // 🆕 NAVIGATION UPDATE - DIPERBAIKI
+        function updateNav() {
+            const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
+            const navUsername = document.getElementById('nav-username');
+            const navLogout = document.getElementById('nav-logout');
+            const navLogin = document.getElementById('nav-login');
+            const navRegister = document.getElementById('nav-register');
+            const welcomeMessageElement = document.getElementById('welcome-message');
+            const navItems = document.querySelectorAll('nav ul li');
+            const currentPagePath = window.location.pathname;
+
+            // PASTIKAN SEMUA NAVIGATION ITEMS VISIBLE
+            navItems.forEach(item => {
+                item.style.display = 'flex';
+                item.style.visibility = 'visible';
+                item.style.opacity = '1';
+            });
+
+            if (isLoggedIn) {
+                const userName = localStorage.getItem('userName');
+                const userRole = localStorage.getItem('userRole');
+
+                if (navUsername) {
+                    navUsername.style.display = 'flex';
+                    navUsername.textContent = `👋 Halo, ${userName} (${userRole})`;
+                }
+
+                if (navLogout) {
+                    navLogout.style.display = 'flex';
+                }
+                
+                if (navLogin) {
+                    navLogin.style.display = 'none';
+                }
+
+                if (navRegister) {
+                    navRegister.style.display = 'none';
+                }
+
+                if (welcomeMessageElement) {
+                    welcomeMessageElement.textContent = `Selamat datang, ${userName} (${userRole})!`;
+                }
+
+            } else {
+                if (navUsername) {
+                    navUsername.style.display = 'none';
+                }
+                
+                if (navLogout) {
+                    navLogout.style.display = 'none';
+                }
+                
+                if (navLogin) {
+                    navLogin.style.display = 'flex';
+                }
+
+                if (navRegister) {
+                    navRegister.style.display = 'flex';
+                }
+
+                if (welcomeMessageElement) {
+                    welcomeMessageElement.textContent = '';
+                }
+            }
+
+            // Hide current page link
+            navItems.forEach(item => {
+                const page = item.dataset.page;
+                if (currentPagePath === '/' || currentPagePath === '/Index.html') {
+                    if (page === 'home') {
+                        item.style.display = 'none';
+                    }
+                }
+            });
+        }
+
+        // Fungsi logout
+        async function handleLogout(event) {
+            event.preventDefault();
+            try {
+                const response = await fetch('/logout', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                const result = await response.json();
+                if (result.success) {
+                    localStorage.clear();
+                    showNotification('👋 Anda telah berhasil logout.', 'success');
+                    window.location.href = '/login';
+                } else {
+                    showNotification('❌ Gagal logout: ' + result.message, 'error');
+                }
+            } catch (error) {
+                console.error('Error during logout:', error);
+                showNotification('❌ Terjadi kesalahan saat logout.', 'error');
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // CEK LOGIN DENGAN LEBIH KETAT
+            const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
+            const userRole = localStorage.getItem('userRole');
+            const userName = localStorage.getItem('userName');
+            
+            if (!isLoggedIn || !userRole || !userName) {
+                window.location.href = '/login';
+                return;
+            }
+
+            // Dark mode ditangani global oleh /app.js
+
+            // Load data buku populer
+            fetchPopularBooks();
+            updateNav();
+
+            // Logout handler
+            const logoutLink = document.getElementById('logout-link');
+            if (logoutLink) {
+                logoutLink.addEventListener('click', handleLogout);
+            }
+        });
+
+        // Fungsi untuk admin/petugas mengubah status buku
+        async function changeBookStatus(id, newStatus) {
+            if (!confirm(`Apakah Anda yakin ingin mengubah status buku ini menjadi "${newStatus}"?`)) {
+                return;
+            }
+            try {
+                const response = await fetch(`/book/status/${id}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status: newStatus })
+                });
+                const data = await response.json();
+                if (data.success) {
+                    showNotification(`Status buku "${data.book.judul}" berhasil diubah menjadi ${data.book.status}.`, 'success');
+                    fetchPopularBooks();
+                } else {
+                    showNotification('Gagal mengubah status: ' + data.message, 'error');
+                }
+            } catch (err) {
+                console.error('Gagal mengubah status buku:', err);
+                showNotification('Terjadi kesalahan saat mengubah status buku.', 'error');
+            }
+        }
+    </script>
+    <script src="js/app.js"></script>
+</body>
+</html>

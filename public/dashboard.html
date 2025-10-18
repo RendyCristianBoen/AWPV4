@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>📊 Dashboard - Sistem Informasi Perpustakaan</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css" />
+    <link rel="stylesheet" href="css/Style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <!-- NAVIGATION - FIXED -->
+    <nav>
+        <ul>
+            <li data-page="home"><a href="/">🏠 Home</a></li>
+            <li data-page="dashboard"><a href="/Dashboard.html">📊 Dashboard</a></li>
+            <li data-page="catalog"><a href="/Catalog.html">📚 Katalog Buku</a></li>
+            <li data-page="loan-history"><a href="/LoanHistory.html">📋 Riwayat Pinjam</a></li>
+            <li data-page="about"><a href="/about">ℹ️ About</a></li>
+
+            <!-- Navigation untuk user yang belum login -->
+            <li id="nav-login" class="nav-fade">
+                <a href="/login">🚪 Login</a>
+            </li>
+            <li id="nav-register" class="nav-fade">
+                <a href="/register">📝 Daftar</a>
+            </li>
+
+            <!-- Navigation untuk user yang sudah login -->
+            <li id="nav-username" class="nav-fade"></li>
+            <li id="nav-logout" class="nav-fade">
+                <a href="#" id="logout-link">🚪 Logout</a>
+            </li>
+        </ul>
+    </nav>
+
+    <div class="toggle-container">
+        <button id="mode-toggle" aria-label="Toggle mode gelap/terang">🌓 Mode Gelap</button>
+    </div>
+
+    <h1>📊 Dashboard Analytics</h1>
+    <p id="welcome-message" class="center-text"></p>
+
+    <div class="content-container">
+        <!-- STATS CARDS -->
+        <div class="dashboard-stats">
+            <div class="stat-card">
+                <div class="stat-icon">📚</div>
+                <div class="stat-info">
+                    <h3>Total Buku</h3>
+                    <span id="total-books" class="stat-number">0</span>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">👥</div>
+                <div class="stat-info">
+                    <h3>Total Users</h3>
+                    <span id="total-users" class="stat-number">0</span>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">📖</div>
+                <div class="stat-info">
+                    <h3>Sedang Dipinjam</h3>
+                    <span id="active-loans" class="stat-number">0</span>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">⭐</div>
+                <div class="stat-info">
+                    <h3>Total Peminjaman</h3>
+                    <span id="total-loans" class="stat-number">0</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- TOP RATED BOOK -->
+        <div class="content-container">
+            <h3>🏆 Buku Rating Tertinggi</h3>
+            <div id="top-rated-book" class="featured-content">
+                <p>Memuat data...</p>
+            </div>
+        </div>
+
+        <!-- CHARTS SECTION -->
+        <div class="charts-container">
+            <div class="content-container">
+                <h3>📊 Distribusi Genre Buku</h3>
+                <canvas id="genre-chart"></canvas>
+            </div>
+            <div class="content-container">
+                <h3>📈 Trend Peminjaman (6 Bulan)</h3>
+                <canvas id="loans-chart"></canvas>
+            </div>
+        </div>
+
+        <!-- POPULAR BOOKS -->
+        <div class="content-container">
+            <h3>🔥 Buku Paling Populer</h3>
+            <div id="popular-books" class="book-grid">
+                <!-- Popular books will be loaded here -->
+            </div>
+        </div>
+
+        <!-- RECOMMENDATIONS -->
+        <div class="content-container">
+            <h3>💡 Rekomendasi Untuk Anda</h3>
+            <div id="recommendations" class="book-grid">
+                <!-- Recommendations will be loaded here -->
+            </div>
+        </div>
+
+        <!-- READING HISTORY -->
+        <div class="content-container">
+            <h3>📖 Riwayat Membaca Anda</h3>
+            <div id="reading-history">
+                <p>Memuat riwayat membaca...</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+    <script>
+        let genreChart, loansChart;
+
+        // Global Chart.js perf tweaks
+        try {
+            if (window.Chart) {
+                Chart.defaults.animation = false;
+                Chart.defaults.animations = {};
+                Chart.defaults.responsiveAnimationDuration = 0;
+            }
+        } catch (e) { /* ignore */ }
+
+        function showNotification(message, type = 'success') {
+            Toastify({
+                text: message,
+                duration: 3000,
+                close: true,
+                gravity: "top",
+                position: "right",
+                backgroundColor: type === 'success' ? "linear-gradient(135deg, #28a745, #20c997)" : "linear-gradient(135deg, #dc3545, #e83e8c)",
+                stopOnFocus: true,
+            }).showToast();
+        }
+
+        // Data Dummy untuk Testing
+        function loadDummyData() {
+            // Stats cards
+            updateStatsCards({
+                totalBooks: 156,
+                totalUsers: 48,
+                activeLoans: 12,
+                totalLoans: 324
+            });
+
+            // Top rated book
+            updateTopRatedBook({
+                judul: "Seni Hidup Bahagia",
+                gambar: "https://via.placeholder.com/80x120/667eea/ffffff?text=⭐4.9",
+                rating: 4.9,
+                genre: "Pengembangan Diri"
+            });
+
+            // Genre distribution
+            createGenreChart([
+                { genre: "Fiksi", count: 45 },
+                { genre: "Non-Fiksi", count: 38 },
+                { genre: "Sains", count: 28 },
+                { genre: "Sejarah", count: 22 },
+                { genre: "Teknologi", count: 18 },
+                { genre: "Bisnis", count: 15 }
+            ]);
+
+            // Monthly trends
+            createLoansChart([
+                { month: "2024-01", count: 42 },
+                { month: "2024-02", count: 38 },
+                { month: "2024-03", count: 51 },
+                { month: "2024-04", count: 47 },
+                { month: "2024-05", count: 55 },
+                { month: "2024-06", count: 62 }
+            ]);
+
+            // Popular books
+            loadPopularBooks([
+                {
+                    id: 1,
+                    judul: "Seni Hidup Bahagia",
+                    penulis: "Dr. Andi Wijaya",
+                    rating: 4.9,
+                    loan_count: 28,
+                    status: "Tersedia",
+                    gambar: "https://via.placeholder.com/150x210/667eea/ffffff?text=Buku+1"
+                },
+                {
+                    id: 2,
+                    judul: "Pemrograman Web Modern",
+                    penulis: "Sarah Chen",
+                    rating: 4.7,
+                    loan_count: 25,
+                    status: "Dipinjam",
+                    gambar: "https://via.placeholder.com/150x210/667eea/ffffff?text=Buku+2"
+                },
+                {
+                    id: 3,
+                    judul: "Sejarah Nusantara",
+                    penulis: "Prof. Bambang",
+                    rating: 4.6,
+                    loan_count: 22,
+                    status: "Tersedia",
+                    gambar: "https://via.placeholder.com/150x210/667eea/ffffff?text=Buku+3"
+                }
+            ]);
+
+            // Load recommendations and history dengan data dummy
+            loadDummyRecommendations();
+            loadDummyReadingHistory();
+        }
+
+        function loadDummyRecommendations() {
+            const recommendations = [
+                {
+                    id: 4,
+                    judul: "Machine Learning Fundamentals",
+                    penulis: "Dr. Lisa Wang",
+                    genre: "Teknologi",
+                    rating: 4.8,
+                    status: "Tersedia",
+                    gambar: "https://via.placeholder.com/150x210/667eea/ffffff?text=Buku+4"
+                },
+                {
+                    id: 5,
+                    judul: "Seni Berbicara di Publik",
+                    penulis: "Michael Tan",
+                    genre: "Pengembangan Diri",
+                    rating: 4.5,
+                    status: "Tersedia",
+                    gambar: "https://via.placeholder.com/150x210/667eea/ffffff?text=Buku+5"
+                },
+                {
+                    id: 6,
+                    judul: "Ekonomi Digital",
+                    penulis: "Dr. Rina Santoso",
+                    genre: "Bisnis",
+                    rating: 4.4,
+                    status: "Tersedia",
+                    gambar: "https://via.placeholder.com/150x210/667eea/ffffff?text=Buku+6"
+                }
+            ];
+
+            const container = document.getElementById('recommendations');
+            container.innerHTML = recommendations.map(book => `
+                <div class="book-card-item" onclick="showBookDetail(${book.id})">
+                    <img src="${book.gambar}" 
+                         alt="Sampul ${book.judul}" 
+                         class="book-cover">
+                    <div class="book-info">
+                        <h3>${book.judul}</h3>
+                        <p><strong>Penulis:</strong> ${book.penulis}</p>
+                        <p><strong>Genre:</strong> ${book.genre}</p>
+                        <p><strong>Rating:</strong> ${'⭐'.repeat(Math.floor(book.rating))} (${book.rating}/5)</p>
+                        <p><strong>Status:</strong> <span class="${book.status === 'Tersedia' ? 'status-tersedia' : 'status-dipinjam'}">${book.status}</span></p>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function loadDummyReadingHistory() {
+            const readingHistory = [
+                {
+                    judul: "Pemrograman Web Modern",
+                    gambar: "https://via.placeholder.com/30x42/667eea/ffffff?text=WEB",
+                    tanggal_pinjam: "2024-05-15",
+                    batas_pengembalian: "2024-05-29",
+                    status: "Dikembalikan",
+                    rating: 4.7
+                },
+                {
+                    judul: "Desain UI/UX",
+                    gambar: "https://via.placeholder.com/30x42/667eea/ffffff?text=UI/UX",
+                    tanggal_pinjam: "2024-06-01",
+                    batas_pengembalian: "2024-06-15",
+                    status: "Dipinjam",
+                    rating: 4.5
+                },
+                {
+                    judul: "Data Science untuk Pemula",
+                    gambar: "https://via.placeholder.com/30x42/667eea/ffffff?text=DS",
+                    tanggal_pinjam: "2024-04-10",
+                    batas_pengembalian: "2024-04-24",
+                    status: "Dikembalikan",
+                    rating: 4.3
+                }
+            ];
+
+            const container = document.getElementById('reading-history');
+            container.innerHTML = `
+                <div class="history-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Buku</th>
+                                <th>Tanggal Pinjam</th>
+                                <th>Batas Kembali</th>
+                                <th>Status</th>
+                                <th>Rating Buku</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${readingHistory.map(loan => `
+                                <tr>
+                                    <td>
+                                        <div class="book-title-cell">
+                                            <img src="${loan.gambar}" 
+                                                 alt="${loan.judul}" 
+                                                 class="history-book-cover">
+                                            <span>${loan.judul}</span>
+                                        </div>
+                                    </td>
+                                    <td>${formatDate(loan.tanggal_pinjam)}</td>
+                                    <td>${formatDate(loan.batas_pengembalian)}</td>
+                                    <td>
+                                        <span class="${loan.status === 'Dipinjam' ? 'status-dipinjam' : loan.status === 'Terlambat' ? 'status-terlambat' : 'status-tersedia'}">
+                                            ${loan.status}
+                                        </span>
+                                    </td>
+                                    <td>${'⭐'.repeat(Math.floor(loan.rating))} (${loan.rating}/5)</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        // Load dashboard data
+        async function loadDashboardData() {
+            try {
+                // Simulasi loading
+                document.body.classList.add('loading');
+                
+                // Coba fetch data dari API (jika ada)
+                const response = await fetch('/dashboard-stats');
+                
+                // Jika endpoint tidak tersedia, gunakan data dummy
+                if (!response.ok) {
+                    console.warn('Endpoint dashboard tidak tersedia, menggunakan data dummy');
+                    loadDummyData();
+                    return;
+                }
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    updateStatsCards(result.stats);
+                    updateTopRatedBook(result.stats.topRatedBook);
+                    createGenreChart(result.stats.genreDistribution);
+                    createLoansChart(result.stats.monthlyTrends);
+                    loadPopularBooks(result.stats.popularBooks);
+                    loadRecommendations();
+                    loadReadingHistory();
+                } else {
+                    showNotification('Gagal memuat data dashboard: ' + result.message, 'error');
+                    loadDummyData(); // Fallback ke data dummy
+                }
+            } catch (error) {
+                console.error('Error loading dashboard:', error);
+                showNotification('Terjadi kesalahan saat memuat dashboard.', 'error');
+                loadDummyData(); // Fallback ke data dummy
+            } finally {
+                document.body.classList.remove('loading');
+            }
+        }
+
+        function updateStatsCards(stats) {
+            document.getElementById('total-books').textContent = stats.totalBooks.toLocaleString('id-ID');
+            document.getElementById('total-users').textContent = stats.totalUsers.toLocaleString('id-ID');
+            document.getElementById('active-loans').textContent = stats.activeLoans.toLocaleString('id-ID');
+            document.getElementById('total-loans').textContent = stats.totalLoans.toLocaleString('id-ID');
+        }
+
+        function updateTopRatedBook(book) {
+            const container = document.getElementById('top-rated-book');
+            if (book.judul !== 'Tidak ada') {
+                container.innerHTML = `
+                    <div class="top-book-card">
+                        <img src="${book.gambar || 'https://via.placeholder.com/80x120/667eea/ffffff?text=No+Cover'}" 
+                             alt="${book.judul}" 
+                             class="top-book-cover" loading="lazy" decoding="async" fetchpriority="low">
+                        <div class="top-book-info">
+                            <h4>${book.judul}</h4>
+                            <p>Rating: ${'⭐'.repeat(Math.floor(book.rating))} (${book.rating}/5)</p>
+                            <p class="book-genre">${book.genre}</p>
+                        </div>
+                    </div>
+                `;
+            } else {
+                container.innerHTML = '<p>Tidak ada data buku</p>';
+            }
+        }
+
+        function createGenreChart(genreData) {
+            const ctx = document.getElementById('genre-chart');
+            if (!ctx) return;
+            
+            if (genreChart) {
+                genreChart.destroy();
+            }
+
+            const labels = genreData.map(item => item.genre);
+            const data = genreData.map(item => item.count);
+
+            genreChart = new Chart(ctx.getContext('2d'), {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: data,
+                        backgroundColor: [
+                            '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', 
+                            '#9966FF', '#FF9F40', '#FF6384', '#C9CBCF'
+                        ],
+                        borderWidth: 2,
+                        borderColor: '#fff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: { duration: 0 },
+                    devicePixelRatio: Math.min(window.devicePixelRatio || 1, 1.5),
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                padding: 20,
+                                usePointStyle: true,
+                                color: getComputedStyle(document.body).getPropertyValue('--text-color')
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function createLoansChart(monthlyData) {
+            const ctx = document.getElementById('loans-chart');
+            if (!ctx) return;
+            
+            if (loansChart) {
+                loansChart.destroy();
+            }
+
+            const labels = monthlyData.map(item => {
+                const [year, month] = item.month.split('-');
+                return `${month}/${year}`;
+            }).reverse();
+
+            const data = monthlyData.map(item => item.count).reverse();
+
+            loansChart = new Chart(ctx.getContext('2d'), {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Jumlah Peminjaman',
+                        data: data,
+                        borderColor: '#36A2EB',
+                        backgroundColor: 'rgba(54, 162, 235, 0.1)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.35,
+                        parsing: false,
+                        spanGaps: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: { duration: 0 },
+                    devicePixelRatio: Math.min(window.devicePixelRatio || 1, 1.5),
+                    normalized: true,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    interaction: { mode: 'nearest', intersect: false },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: { stepSize: 1 }
+                        }
+                    }
+                }
+            });
+        }
+
+        function loadPopularBooks(popularBooks) {
+            const container = document.getElementById('popular-books');
+            
+            if (popularBooks.length === 0) {
+                container.innerHTML = '<p>Tidak ada data buku populer</p>';
+                return;
+            }
+
+            container.innerHTML = popularBooks.map(book => `
+                <div class="book-card-item" onclick="showBookDetail(${book.id})">
+                    <img src="${book.gambar || 'https://via.placeholder.com/150x210/667eea/ffffff?text=No+Cover'}" 
+                         alt="Sampul ${book.judul}" 
+                         class="book-cover" loading="lazy" decoding="async" fetchpriority="low">
+                    <div class="book-info">
+                        <h3>${book.judul}</h3>
+                        <p><strong>Penulis:</strong> ${book.penulis}</p>
+                        <p><strong>Rating:</strong> ${'⭐'.repeat(Math.floor(book.rating))} (${book.rating}/5)</p>
+                        <p><strong>Dipinjam:</strong> ${book.loan_count || 0} kali</p>
+                        <p><strong>Status:</strong> <span class="${book.status === 'Tersedia' ? 'status-tersedia' : 'status-dipinjam'}">${book.status}</span></p>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function loadRecommendations() {
+            try {
+                const response = await fetch('/recommendations');
+                const result = await response.json();
+                
+                if (result.success && result.recommendations.length > 0) {
+                    const container = document.getElementById('recommendations');
+                    container.innerHTML = result.recommendations.map(book => `
+                        <div class="book-card-item" onclick="showBookDetail(${book.id})">
+                            <img src="${book.gambar || 'https://via.placeholder.com/150x210/667eea/ffffff?text=No+Cover'}" 
+                                 alt="Sampul ${book.judul}" 
+                                 class="book-cover" loading="lazy" decoding="async" fetchpriority="low">
+                            <div class="book-info">
+                                <h3>${book.judul}</h3>
+                                <p><strong>Penulis:</strong> ${book.penulis}</p>
+                                <p><strong>Genre:</strong> ${book.genre}</p>
+                                <p><strong>Rating:</strong> ${'⭐'.repeat(Math.floor(book.rating))} (${book.rating}/5)</p>
+                                <p><strong>Status:</strong> <span class="${book.status === 'Tersedia' ? 'status-tersedia' : 'status-dipinjam'}">${book.status}</span></p>
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    document.getElementById('recommendations').innerHTML = '<p>Tidak ada rekomendasi saat ini</p>';
+                }
+            } catch (error) {
+                console.error('Error loading recommendations:', error);
+                document.getElementById('recommendations').innerHTML = '<p>Gagal memuat rekomendasi</p>';
+            }
+        }
+
+        async function loadReadingHistory() {
+            try {
+                const response = await fetch('/reading-history');
+                const result = await response.json();
+                
+                if (result.success && result.readingHistory.length > 0) {
+                    const container = document.getElementById('reading-history');
+                    container.innerHTML = `
+                        <div class="history-table">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Buku</th>
+                                        <th>Tanggal Pinjam</th>
+                                        <th>Batas Kembali</th>
+                                        <th>Status</th>
+                                        <th>Rating Buku</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${result.readingHistory.map(loan => `
+                                        <tr>
+                                            <td>
+                                                <div class="book-title-cell">
+                                            <img src="${loan.gambar || 'https://via.placeholder.com/30x42/667eea/ffffff?text=No+Cover'}" 
+                                                         alt="${loan.judul}" 
+                                                         class="history-book-cover" loading="lazy" decoding="async" fetchpriority="low">
+                                                    <span>${loan.judul}</span>
+                                                </div>
+                                            </td>
+                                            <td>${formatDate(loan.tanggal_pinjam)}</td>
+                                            <td>${formatDate(loan.batas_pengembalian)}</td>
+                                            <td>
+                                                <span class="${loan.status === 'Dipinjam' ? 'status-dipinjam' : loan.status === 'Terlambat' ? 'status-terlambat' : 'status-tersedia'}">
+                                                    ${loan.status}
+                                                </span>
+                                            </td>
+                                            <td>${'⭐'.repeat(Math.floor(loan.rating))} (${loan.rating}/5)</td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    `;
+                } else {
+                    document.getElementById('reading-history').innerHTML = '<p>Belum ada riwayat membaca</p>';
+                }
+            } catch (error) {
+                console.error('Error loading reading history:', error);
+                document.getElementById('reading-history').innerHTML = '<p>Gagal memuat riwayat membaca</p>';
+            }
+        }
+
+        function formatDate(dateString) {
+            if (!dateString) return '-';
+            const date = new Date(dateString);
+            return date.toLocaleDateString('id-ID', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric'
+            });
+        }
+
+        async function showBookDetail(bookId) {
+            // Redirect ke catalog page dengan modal detail
+            window.location.href = `/Catalog.html#book-${bookId}`;
+        }
+
+        // 🆕 NAVIGATION UPDATE - DIPERBAIKI
+        function updateNav() {
+            const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
+            const navUsername = document.getElementById('nav-username');
+            const navLogout = document.getElementById('nav-logout');
+            const navLogin = document.getElementById('nav-login');
+            const navRegister = document.getElementById('nav-register');
+            const welcomeMessageElement = document.getElementById('welcome-message');
+            const navItems = document.querySelectorAll('nav ul li');
+            const currentPagePath = window.location.pathname;
+
+            // PASTIKAN SEMUA NAVIGATION ITEMS VISIBLE
+            navItems.forEach(item => {
+                item.style.display = 'flex';
+                item.style.visibility = 'visible';
+                item.style.opacity = '1';
+            });
+
+            if (isLoggedIn) {
+                const userName = localStorage.getItem('userName');
+                const userRole = localStorage.getItem('userRole');
+
+                if (navUsername) {
+                    navUsername.style.display = 'flex';
+                    navUsername.textContent = `👋 Halo, ${userName} (${userRole})`;
+                }
+
+                if (navLogout) {
+                    navLogout.style.display = 'flex';
+                }
+                
+                if (navLogin) {
+                    navLogin.style.display = 'none';
+                }
+
+                if (navRegister) {
+                    navRegister.style.display = 'none';
+                }
+
+                if (welcomeMessageElement) {
+                    welcomeMessageElement.textContent = `Selamat datang di Dashboard, ${userName}!`;
+                }
+
+            } else {
+                if (navUsername) {
+                    navUsername.style.display = 'none';
+                }
+                
+                if (navLogout) {
+                    navLogout.style.display = 'none';
+                }
+                
+                if (navLogin) {
+                    navLogin.style.display = 'flex';
+                }
+
+                if (navRegister) {
+                    navRegister.style.display = 'flex';
+                }
+
+                if (welcomeMessageElement) {
+                    welcomeMessageElement.textContent = '';
+                }
+                
+                // Redirect ke login jika tidak authenticated
+                window.location.href = '/login';
+            }
+
+            // Hide current page link
+            navItems.forEach(item => {
+                const page = item.dataset.page;
+                if (currentPagePath === '/Dashboard.html' || currentPagePath === '/dashboard') {
+                    if (page === 'dashboard') {
+                        item.style.display = 'none';
+                    }
+                }
+            });
+        }
+
+        async function handleLogout(event) {
+            event.preventDefault();
+            try {
+                const response = await fetch('/logout', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                const result = await response.json();
+                if (result.success) {
+                    localStorage.clear();
+                    showNotification('👋 Anda telah berhasil logout.', 'success');
+                    window.location.href = '/login';
+                } else {
+                    showNotification('❌ Gagal logout: ' + result.message, 'error');
+                }
+            } catch (error) {
+                console.error('Error during logout:', error);
+                showNotification('❌ Terjadi kesalahan saat logout.', 'error');
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // Set dummy login data untuk testing
+            if (!localStorage.getItem('isLoggedIn')) {
+                localStorage.setItem('isLoggedIn', 'true');
+                localStorage.setItem('userName', 'Ahmad Wijaya');
+                localStorage.setItem('userRole', 'Member');
+            }
+
+            if (localStorage.getItem('isLoggedIn') !== 'true') {
+                window.location.href = '/login';
+                return;
+            }
+
+            // Dark mode ditangani global oleh /app.js
+
+            updateNav();
+            loadDashboardData();
+
+            const logoutLink = document.getElementById('logout-link');
+            if (logoutLink) {
+                logoutLink.addEventListener('click', handleLogout);
+            }
+
+            // Auto-refresh data every 2 minutes
+            setInterval(loadDashboardData, 120000);
+        });
+    </script>
+    <script src="js/app.js"></script>
+</body>
+</html>
