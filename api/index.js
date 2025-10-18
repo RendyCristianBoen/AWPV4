@@ -138,8 +138,8 @@ app.get('/LoanHistory.html', (req, res) => {
     res.sendFile(path.join(publicPath, 'LoanHistory.html'));
 });
 
-app.get('/Dashboard.html', (req, res) => {
-    res.sendFile(path.join(publicPath, 'Dashboard.html'));
+app.get('/dashboard.html', (req, res) => {
+    res.sendFile(path.join(publicPath, 'dashboard.html'));
 });
 
 // ✅ FIX: Serve static files explicitly
