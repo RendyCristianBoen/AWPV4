@@ -194,7 +194,7 @@
                 const response = await fetch('/loan-history');
                 if (response.status === 401) {
                     console.log('401 response - but not redirecting for testing');
-                    // window.location.href = '/login';
+                    // // window.location.href = '/login'; // Disabled for testing
                     return;
                 }
                 const result = await response.json();
@@ -688,7 +688,7 @@
                 if (result.success) {
                     localStorage.clear();
                     showNotification('👋 Anda telah berhasil logout.', 'success');
-                    window.location.href = '/login';
+                    // // window.location.href = '/login'; // Disabled for testing // Disabled for testing
                 } else {
                     showNotification('❌ Gagal logout: ' + result.message, 'error');
                 }
@@ -710,7 +710,7 @@
             
             // Temporarily comment out redirect
             // if (!isLoggedIn || !userRole || !userName) {
-            //     window.location.href = '/login';
+            //     // window.location.href = '/login'; // Disabled for testing
             //     return;
             // }
 

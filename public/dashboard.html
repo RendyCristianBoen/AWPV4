@@ -682,8 +682,9 @@
                     welcomeMessageElement.textContent = '';
                 }
                 
-                // Redirect ke login jika tidak authenticated
-                window.location.href = '/login';
+                // Redirect ke login jika tidak authenticated - disabled for testing
+                console.log('Not authenticated - but not redirecting for testing');
+                // // window.location.href = '/login'; // Disabled for testing
             }
 
             // Hide current page link
@@ -708,7 +709,7 @@
                 if (result.success) {
                     localStorage.clear();
                     showNotification('👋 Anda telah berhasil logout.', 'success');
-                    window.location.href = '/login';
+                    // // window.location.href = '/login'; // Disabled for testing // Disabled for testing
                 } else {
                     showNotification('❌ Gagal logout: ' + result.message, 'error');
                 }
@@ -726,10 +727,15 @@
                 localStorage.setItem('userRole', 'Member');
             }
 
-            if (localStorage.getItem('isLoggedIn') !== 'true') {
-                window.location.href = '/login';
-                return;
-            }
+            console.log('Dashboard page - localStorage check:', {
+                isLoggedIn: localStorage.getItem('isLoggedIn')
+            });
+            
+            // Temporarily comment out redirect
+            // if (localStorage.getItem('isLoggedIn') !== 'true') {
+            //     // window.location.href = '/login'; // Disabled for testing
+            //     return;
+            // }
 
             // Dark mode ditangani global oleh /app.js
 

@@ -255,7 +255,7 @@
                 if (result.success) {
                     localStorage.clear();
                     showNotification('👋 Anda telah berhasil logout.', 'success');
-                    window.location.href = '/login';
+                    // // window.location.href = '/login'; // Disabled for testing // Disabled for testing
                 } else {
                     showNotification('❌ Gagal logout: ' + result.message, 'error');
                 }

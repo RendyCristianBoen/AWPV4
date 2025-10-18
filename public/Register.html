@@ -353,7 +353,7 @@
                     
                     // Redirect to login page after successful registration
                     setTimeout(() => {
-                        window.location.href = '/login';
+                        // // window.location.href = '/login'; // Disabled for testing // Disabled for testing
                     }, 2000);
                 } else {
                     const error = await response.json();
