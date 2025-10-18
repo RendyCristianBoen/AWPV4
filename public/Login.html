@@ -128,7 +128,10 @@
           btn.disabled = true;
 
           // Redirect ke home
-          setTimeout(() => (window.location.href = '/'), 1200);
+          setTimeout(() => {
+            console.log('Redirecting to home...');
+            window.location.href = '/';
+          }, 1500);
         } else {
           document.getElementById('passwordError').textContent =
             result.message || 'Login gagal. Periksa kembali username dan password.';
@@ -168,6 +171,8 @@
       const userName = localStorage.getItem('userName');
       const userRole = localStorage.getItem('userRole');
 
+      console.log('Login page - updateNav:', { isLoggedIn, userName, userRole });
+
       const navUsername = document.getElementById('nav-username');
       const navLogout = document.getElementById('nav-logout');
       const navLogin = document.getElementById('nav-login');
@@ -183,7 +188,11 @@
         if (navRegister) navRegister.style.display = 'none';
 
         // Kalau udah login dan buka /login, langsung ke home
-        setTimeout(() => (window.location.href = '/'), 800);
+        console.log('User already logged in, redirecting to home in 3 seconds...');
+        setTimeout(() => {
+          console.log('Executing redirect to home');
+          window.location.href = '/';
+        }, 3000);
       } else {
         if (navUsername) navUsername.style.display = 'none';
         if (navLogout) navLogout.style.display = 'none';
@@ -193,6 +202,7 @@
     }
 
     document.addEventListener('DOMContentLoaded', () => {
+      console.log('Login page DOM loaded');
       updateNav();
       document.getElementById('logout-link')?.addEventListener('click', handleLogout);
     });

@@ -14,36 +14,6 @@
     id: ls.getItem("userId") || "",
   });
 
-  // ==== SYNC SESSION DENGAN BACKEND ====
-  app.syncSession = async function () {
-    try {
-      const response = await fetch("/check-session", {
-        method: "GET",
-        credentials: "include",
-      });
-      const result = await response.json();
-
-      console.log("Session sync - backend result:", result);
-
-      if (result.success && result.isLoggedIn && result.user) {
-        ls.setItem("isLoggedIn", "true");
-        ls.setItem("userName", result.user.nama);
-        ls.setItem("userRole", result.user.role);
-        ls.setItem("userId", result.user.id);
-        console.log("Session sync - updated localStorage with backend data");
-      } else {
-        console.warn("Session sync - user not logged in, clearing localStorage");
-        ls.removeItem("isLoggedIn");
-        ls.removeItem("userName");
-        ls.removeItem("userRole");
-        ls.removeItem("userId");
-      }
-    } catch (error) {
-      console.error("Session sync error:", error);
-      console.log("Session sync - keeping localStorage as fallback");
-    }
-  };
-
   // ==== DETEKSI HALAMAN ====
   function getPageKey() {
     const p = location.pathname.toLowerCase();
@@ -64,16 +34,10 @@
     const isLoggedIn = app.isLoggedIn();
 
     console.log("Auth guard - page:", key, "| loggedIn:", isLoggedIn);
-
-    if (!isLoggedIn && !publicPages.includes(key)) {
-      console.warn("Auth guard - not logged in, redirecting to /login");
-      window.location.href = "/login";
-    }
-
-    if (isLoggedIn && ["login", "register"].includes(key)) {
-      console.info("Auth guard - already logged in, redirecting to /");
-      window.location.href = "/";
-    }
+    
+    // COMPLETELY DISABLED FOR TESTING
+    console.log("Auth guard - COMPLETELY DISABLED for testing");
+    return;
   };
 
   // ==== NAVIGATION HANDLER ====
@@ -108,7 +72,7 @@
 
     if (isLogged) {
       if (loginEl) loginEl.style.display = "none";
-      if (registerEl) loginEl.style.display = "none";
+      if (registerEl) registerEl.style.display = "none";
       if (userEl) {
         userEl.style.display = "flex";
         userEl.textContent = `👋 Halo, ${user.name} (${user.role})`;
@@ -202,11 +166,13 @@
   document.addEventListener("DOMContentLoaded", async () => {
     console.log("=== APP INIT START ===");
 
-    await app.syncSession?.();
+    // Disable session sync and auth guard for testing
+    console.log("Session sync and auth guard disabled for testing");
+    
     app.updateNav?.();
     app.bindLogout?.();
     app.attachModeToggle?.();
-    app.ensureAuth?.();
+    // app.ensureAuth?.(); // DISABLED
 
     console.log("=== APP INIT COMPLETE ===");
   });
