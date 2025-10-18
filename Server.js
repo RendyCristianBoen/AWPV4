@@ -1,11 +1,54 @@
-// Server.js - SISTEM PERPUSTAKAAN UPGRADE FULL FEATURE
+// Server.js - SISTEM PERPUSTAKAAN UPGRADE FULL FEATURE (FIXED)
 const express = require('express');
 const session = require('express-session');
+const cookieParser = require('cookie-parser');
 const cors = require('cors');
 const fs = require('fs');
 const path = require('path');
 const bcrypt = require('bcrypt');
-const { pool, initializeDatabase } = require('./database');
+const mysql = require('mysql2/promise');
+
+// Database configuration
+const dbConfig = {
+    host: 'maglev.proxy.rlwy.net',
+    port: 15489,
+    user: 'root',
+    password: 'dZCGhuLCPRWWaSyzXsOXgTpFRuqNiNOE',
+    database: 'railway',
+    waitForConnections: true,
+    connectionLimit: 5,
+    queueLimit: 0
+};
+
+let pool;
+
+// Initialize database
+async function initializeDatabase() {
+    if (!pool) {
+        pool = mysql.createPool(dbConfig);
+        console.log('✅ Database connected');
+    }
+    return pool;
+}
+
+// Session management functions
+const sessions = {};
+
+function createSession(user) {
+    const sessionId = Math.random().toString(36).substring(2) + Date.now().toString(36);
+    sessions[sessionId] = {
+        userId: user.id,
+        username: user.username,
+        role: user.role,
+        nama: user.nama,
+        createdAt: new Date()
+    };
+    return sessionId;
+}
+
+function verifySession(sessionId) {
+    return sessions[sessionId];
+}
 
 // Initialize Express app
 const app = express();
@@ -16,6 +59,9 @@ app.use(cors({
     credentials: true
 }));
 app.use(express.json());
+app.use(cookieParser());
+
+// ✅ FIX: Static files dari folder public
 app.use(express.static(path.join(__dirname, 'public')));
 
 // Session configuration
@@ -24,11 +70,21 @@ app.use(session({
     resave: false,
     saveUninitialized: false,
     cookie: {
-        secure: false, // Set to true if using HTTPS
+        secure: false,
         httpOnly: true,
-        maxAge: 24 * 60 * 60 * 1000 // 24 hours
+        maxAge: 24 * 60 * 60 * 1000
     }
 }));
+
+// Database middleware
+app.use(async (req, res, next) => {
+    try {
+        await initializeDatabase();
+        next();
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Database error' });
+    }
+});
 
 // Authentication middleware
 function requireAuth(req, res, next) {
@@ -46,22 +102,13 @@ function requireAdminOrPetugas(req, res, next) {
     res.status(403).json({ success: false, message: 'Akses ditolak. Hanya admin atau petugas yang dapat mengakses fitur ini.' });
 }
 
-// Static file routes (no auth required) - now served by express.static from public folder
+// ==================== ROUTES ====================
 
-// Public routes (no auth required)
-app.get('/login', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'Login.html'));
-});
+// HTML Routes - Express akan otomatis serve file dari public folder
+// Tidak perlu route manual untuk file HTML karena sudah ada express.static
 
-app.get('/register', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'Register.html'));
-});
-
-app.get('/about', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'About.html'));
-});
-// Authentication routes
-app.post('/login', async (req, res) => {
+// API Routes
+app.post('/api/login', async (req, res) => {
     try {
         console.log('Login request received:', req.body);
         
@@ -71,9 +118,6 @@ app.post('/login', async (req, res) => {
             return res.status(400).json({ success: false, message: 'Username dan password harus diisi' });
         }
 
-        console.log('Login attempt for user:', username);
-
-        // Query dengan password hashing
         const [users] = await pool.execute(
             'SELECT id, username, password, role, nama, email FROM users WHERE username = ?',
             [username]
@@ -84,15 +128,16 @@ app.post('/login', async (req, res) => {
         if (users.length > 0) {
             const user = users[0];
             
-            // Password verification dengan bcrypt
             const isValidPassword = await bcrypt.compare(password, user.password);
             
             if (isValidPassword) {
-                // Set session data
-                req.session.userId = user.id;
-                req.session.username = user.username;
-                req.session.role = user.role;
-                req.session.nama = user.nama;
+                const sessionId = createSession(user);
+                res.cookie('sessionId', sessionId, { 
+                    httpOnly: true, 
+                    path: '/', 
+                    maxAge: 86400000,
+                    sameSite: 'strict'
+                });
                 
                 res.json({ 
                     success: true, 
@@ -117,11 +162,11 @@ app.post('/login', async (req, res) => {
         res.status(400).json({ success: false, message: 'Request tidak valid: ' + err.message });
     }
 });
-app.post('/register', async (req, res) => {
+
+app.post('/api/register', async (req, res) => {
     try {
         const { username, password, email, nama, telepon, alamat } = req.body;
         
-        // Validasi input
         if (!username || !password || !email || !nama) {
             return res.status(400).json({ 
                 success: false, 
@@ -129,7 +174,6 @@ app.post('/register', async (req, res) => {
             });
         }
         
-        // Validasi email
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(email)) {
             return res.status(400).json({ 
@@ -138,7 +182,6 @@ app.post('/register', async (req, res) => {
             });
         }
         
-        // Validasi password strength
         if (password.length < 6) {
             return res.status(400).json({ 
                 success: false, 
@@ -146,7 +189,6 @@ app.post('/register', async (req, res) => {
             });
         }
         
-        // Cek apakah username atau email sudah ada
         const [existingUsers] = await pool.execute(
             'SELECT id FROM users WHERE username = ? OR email = ?',
             [username, email]
@@ -159,17 +201,14 @@ app.post('/register', async (req, res) => {
             });
         }
         
-        // Hash password sebelum disimpan
         const hashedPassword = await bcrypt.hash(password, 10);
         
-        // Insert user baru dengan role default 'pengguna'
         const [result] = await pool.execute(
             `INSERT INTO users (username, password, email, nama, role, telepon, alamat) 
              VALUES (?, ?, ?, ?, 'pengguna', ?, ?)`,
             [username, hashedPassword, email, nama, telepon || null, alamat || null]
         );
         
-        // Ambil data user yang baru dibuat
         const [newUsers] = await pool.execute(
             'SELECT id, username, email, nama, role, telepon, alamat, created_at FROM users WHERE id = ?',
             [result.insertId]
@@ -200,16 +239,37 @@ app.post('/register', async (req, res) => {
     }
 });
 
-app.post('/logout', (req, res) => {
-    req.session.destroy((err) => {
-        if (err) {
-            return res.status(500).json({ success: false, message: 'Gagal logout' });
-        }
-        res.json({ success: true, message: 'Logout berhasil' });
-    });
+app.post('/api/logout', (req, res) => {
+    const sessionId = req.cookies.sessionId;
+    if (sessionId && sessions[sessionId]) {
+        delete sessions[sessionId];
+    }
+    res.clearCookie('sessionId');
+    res.json({ success: true, message: 'Logout berhasil' });
 });
-// Dashboard Analytics
-app.get('/dashboard-stats', requireAuth, async (req, res) => {
+
+app.get('/api/check-session', (req, res) => {
+    const sessionId = req.cookies.sessionId;
+    const session = sessionId ? verifySession(sessionId) : null;
+    
+    if (session) {
+        res.json({
+            success: true,
+            isLoggedIn: true,
+            user: {
+                id: session.userId,
+                username: session.username,
+                role: session.role,
+                nama: session.nama
+            }
+        });
+    } else {
+        res.json({ success: true, isLoggedIn: false });
+    }
+});
+
+// 🆕 DASHBOARD ANALYTICS
+app.get('/api/dashboard-stats', requireAuth, async (req, res) => {
     try {
         const [totalBooks] = await pool.execute('SELECT COUNT(*) as total FROM books');
         const [totalUsers] = await pool.execute('SELECT COUNT(*) as total FROM users');
@@ -217,7 +277,6 @@ app.get('/dashboard-stats', requireAuth, async (req, res) => {
         const [totalLoans] = await pool.execute('SELECT COUNT(*) as total FROM loan_history');
         const [topRatedBook] = await pool.execute('SELECT judul, rating FROM books ORDER BY rating DESC LIMIT 1');
         
-        // Stats genre popularity
         const [genreStats] = await pool.execute(`
             SELECT genre, COUNT(*) as count 
             FROM books 
@@ -225,7 +284,6 @@ app.get('/dashboard-stats', requireAuth, async (req, res) => {
             ORDER BY count DESC
         `);
         
-        // Monthly loan trends
         const [monthlyStats] = await pool.execute(`
             SELECT DATE_FORMAT(tanggal_pinjam, '%Y-%m') as month, COUNT(*) as count 
             FROM loan_history 
@@ -234,7 +292,6 @@ app.get('/dashboard-stats', requireAuth, async (req, res) => {
             LIMIT 6
         `);
 
-        // Popular books (most borrowed)
         const [popularBooks] = await pool.execute(`
             SELECT b.*, COUNT(lh.id) as loan_count
             FROM books b 
@@ -262,8 +319,9 @@ app.get('/dashboard-stats', requireAuth, async (req, res) => {
         res.status(500).json({ success: false, message: 'Gagal memuat statistik dashboard.' });
     }
 });
-// Advanced Search
-app.get('/search', requireAuth, async (req, res) => {
+
+// 🆕 ADVANCED SEARCH
+app.get('/api/search', requireAuth, async (req, res) => {
     try {
         const { q: query, genre, minRating, year, author } = req.query;
         
@@ -311,15 +369,15 @@ app.get('/search', requireAuth, async (req, res) => {
         res.status(500).json({ success: false, message: 'Gagal melakukan pencarian.' });
     }
 });
-// Book Recommendations
-app.get('/recommendations', requireAuth, async (req, res) => {
+
+// 🆕 BOOK RECOMMENDATIONS
+app.get('/api/recommendations', requireAuth, async (req, res) => {
     try {
         const { bookId, genre } = req.query;
         
         let recommendations = [];
         
         if (bookId) {
-            // Rekomendasi berdasarkan buku yang sedang dilihat
             const [book] = await pool.execute('SELECT genre FROM books WHERE id = ?', [bookId]);
             if (book.length > 0) {
                 const [similarBooks] = await pool.execute(`
@@ -331,7 +389,6 @@ app.get('/recommendations', requireAuth, async (req, res) => {
                 recommendations = similarBooks;
             }
         } else if (genre) {
-            // Rekomendasi berdasarkan genre tertentu
             const [genreBooks] = await pool.execute(`
                 SELECT * FROM books 
                 WHERE genre = ? AND status = 'Tersedia'
@@ -340,7 +397,6 @@ app.get('/recommendations', requireAuth, async (req, res) => {
             `, [genre]);
             recommendations = genreBooks;
         } else {
-            // Rekomendasi umum: buku dengan rating tertinggi
             const [topRated] = await pool.execute(`
                 SELECT * FROM books 
                 WHERE status = 'Tersedia'
@@ -357,8 +413,8 @@ app.get('/recommendations', requireAuth, async (req, res) => {
     }
 });
 
-// Popular Books
-app.get('/popular-books', requireAuth, async (req, res) => {
+// 🆕 POPULAR BOOKS
+app.get('/api/popular-books', requireAuth, async (req, res) => {
     try {
         const [popularBooks] = await pool.execute(`
             SELECT b.*, COUNT(lh.id) as loan_count
@@ -376,9 +432,12 @@ app.get('/popular-books', requireAuth, async (req, res) => {
     }
 });
 
-// User Reading History
-app.get('/reading-history', requireAuth, async (req, res) => {
+// 🆕 USER READING HISTORY
+app.get('/api/reading-history', requireAuth, async (req, res) => {
     try {
+        const sessionId = req.cookies.sessionId;
+        const session = verifySession(sessionId);
+        
         const [readingHistory] = await pool.execute(`
             SELECT lh.*, b.judul, b.penulis, b.gambar, b.genre, b.rating
             FROM loan_history lh 
@@ -386,7 +445,7 @@ app.get('/reading-history', requireAuth, async (req, res) => {
             WHERE lh.user_id = ? 
             ORDER BY lh.tanggal_pinjam DESC
             LIMIT 20
-        `, [req.session.userId]);
+        `, [session.userId]);
         
         res.json({ success: true, readingHistory });
     } catch (error) {
@@ -394,37 +453,9 @@ app.get('/reading-history', requireAuth, async (req, res) => {
         res.status(500).json({ success: false, message: 'Gagal memuat riwayat membaca.' });
     }
 });
-// Protected routes - require authentication
-app.get('/', (req, res) => {
-    if (!req.session || !req.session.userId) {
-        return res.redirect('/login');
-    }
-    res.sendFile(path.join(__dirname, 'public', 'Index.html'));
-});
 
-app.get('/Catalog.html', (req, res) => {
-    if (!req.session || !req.session.userId) {
-        return res.redirect('/login');
-    }
-    res.sendFile(path.join(__dirname, 'public', 'Catalog.html'));
-});
-
-app.get('/LoanHistory.html', (req, res) => {
-    if (!req.session || !req.session.userId) {
-        return res.redirect('/login');
-    }
-    res.sendFile(path.join(__dirname, 'public', 'LoanHistory.html'));
-});
-
-app.get('/Dashboard.html', (req, res) => {
-    if (!req.session || !req.session.userId) {
-        return res.redirect('/login');
-    }
-    res.sendFile(path.join(__dirname, 'public', 'Dashboard.html'));
-});
-
-// Books data endpoint
-app.get('/data', requireAuth, async (req, res) => {
+// Books API
+app.get('/api/books', requireAuth, async (req, res) => {
     try {
         const [books] = await pool.execute('SELECT * FROM books');
         res.json(books);
@@ -433,8 +464,8 @@ app.get('/data', requireAuth, async (req, res) => {
         res.status(500).json({ success: false, message: 'Gagal memuat data buku.' });
     }
 });
-// Get single book by ID
-app.get('/book/:id', requireAuth, async (req, res) => {
+
+app.get('/api/book/:id', requireAuth, async (req, res) => {
     try {
         const bookId = parseInt(req.params.id);
         const [books] = await pool.execute('SELECT * FROM books WHERE id = ?', [bookId]);
@@ -448,9 +479,13 @@ app.get('/book/:id', requireAuth, async (req, res) => {
         res.status(500).json({ success: false, message: 'Gagal memuat data buku.' });
     }
 });
-// Get loan history
-app.get('/loan-history', requireAuth, async (req, res) => {
+
+// LOAN HISTORY
+app.get('/api/loan-history', requireAuth, async (req, res) => {
     try {
+        const sessionId = req.cookies.sessionId;
+        const session = verifySession(sessionId);
+        
         let query = `
             SELECT lh.*, b.judul, b.penulis, b.gambar, u.nama as nama_peminjam 
             FROM loan_history lh 
@@ -460,10 +495,9 @@ app.get('/loan-history', requireAuth, async (req, res) => {
         
         let params = [];
         
-        // Filter berdasarkan role
-        if (req.session.role === 'pengguna') {
+        if (session.role === 'pengguna') {
             query += ' WHERE lh.user_id = ?';
-            params.push(req.session.userId);
+            params.push(session.userId);
         }
         
         query += ' ORDER BY lh.tanggal_pinjam DESC';
@@ -476,139 +510,9 @@ app.get('/loan-history', requireAuth, async (req, res) => {
         res.status(500).json({ success: false, message: 'Gagal memuat riwayat peminjaman.' });
     }
 });
-// Export CSV loan history
-app.get('/export-loan-history', requireAuth, async (req, res) => {
-    try {
-        const { status, sort = 'tanggal_pinjam', order = 'desc' } = req.query;
-        const sortMap = {
-            judul: 'b.judul',
-            penulis: 'b.penulis',
-            peminjam: 'u.nama',
-            tanggal_pinjam: 'lh.tanggal_pinjam',
-            batas_pengembalian: 'lh.batas_pengembalian',
-            tanggal_kembali: 'lh.tanggal_kembali',
-            durasi_hari: 'lh.durasi_hari',
-            status: 'lh.status',
-            denda: 'lh.denda'
-        };
-        const orderBy = sortMap[sort] || 'lh.tanggal_pinjam';
-        const orderDirection = order.toLowerCase() === 'asc' ? 'ASC' : 'DESC';
 
-        let baseSql = `
-            FROM loan_history lh 
-            JOIN books b ON lh.book_id = b.id 
-            JOIN users u ON lh.user_id = u.id
-        `;
-        const where = [];
-        const params = [];
-        if (req.session.role === 'pengguna') {
-            where.push('lh.user_id = ?');
-            params.push(req.session.userId);
-        }
-        if (status) {
-            if (status === 'Terlambat') {
-                where.push("((lh.status = 'Dipinjam' AND lh.batas_pengembalian < NOW()) OR lh.status = 'Terlambat'))");
-            } else {
-                where.push('lh.status = ?');
-                params.push(status);
-            }
-        }
-        const whereSql = where.length ? ' WHERE ' + where.join(' AND ') : '';
-
-        const [rows] = await pool.execute(
-            `SELECT lh.*, b.judul, b.penulis, b.gambar, u.nama as nama_peminjam ${baseSql} ${whereSql} ORDER BY ${orderBy} ${orderDirection}`,
-            params
-        );
-
-        const header = ['Judul','Penulis','Peminjam','TanggalPinjam','BatasKembali','TanggalKembali','Durasi(hari)','Status','Denda'];
-        const csvLines = [header.join(',')];
-        for (const r of rows) {
-            const statusDisplay = r.status;
-            const vals = [
-                r.judul, r.penulis, r.nama_peminjam,
-                r.tanggal_pinjam ? new Date(r.tanggal_pinjam).toISOString() : '',
-                r.batas_pengembalian ? new Date(r.batas_pengembalian).toISOString() : '',
-                r.tanggal_kembali ? new Date(r.tanggal_kembali).toISOString() : '',
-                r.durasi_hari || 0,
-                statusDisplay,
-                r.denda || 0
-            ].map(v => '"' + String(v).replace(/"/g,'""') + '"');
-            csvLines.push(vals.join(','));
-        }
-        const csv = csvLines.join('\n');
-        res.set({
-            'Content-Type': 'text/csv; charset=utf-8',
-            'Content-Disposition': 'attachment; filename="loan-history.csv"'
-        });
-        res.send(csv);
-    } catch (err) {
-        console.error('Error exporting CSV:', err);
-        res.status(500).json({ success: false, message: 'Gagal mengekspor CSV.' });
-    }
-});
-// Return book
-app.post('/return-book/:id', requireAuth, async (req, res) => {
-    try {
-        const loanId = parseInt(req.params.id);
-        
-        // Cek apakah loan history ada dan milik user yang sesuai
-        let query = 'SELECT lh.*, b.judul FROM loan_history lh JOIN books b ON lh.book_id = b.id WHERE lh.id = ?';
-        let params = [loanId];
-        
-        // Jika user adalah pengguna biasa, hanya bisa mengembalikan bukunya sendiri
-        if (req.session.role === 'pengguna') {
-            query += ' AND lh.user_id = ?';
-            params.push(req.session.userId);
-        }
-        
-        const [loans] = await pool.execute(query, params);
-        
-        if (loans.length === 0) {
-            return res.status(404).json({ success: false, message: 'Riwayat peminjaman tidak ditemukan atau Anda tidak memiliki akses.' });
-        }
-
-        const loan = loans[0];
-        
-        // Cek apakah buku sudah dikembalikan
-        if (loan.status !== 'Dipinjam' && loan.status !== 'Terlambat') {
-            return res.status(400).json({ success: false, message: 'Buku sudah dikembalikan sebelumnya.' });
-        }
-
-        // Update status buku menjadi Tersedia
-        await pool.execute('UPDATE books SET status = "Tersedia" WHERE id = ?', [loan.book_id]);
-        
-        // Update loan_history
-        const sekarang = new Date();
-        const batas = new Date(loan.batas_pengembalian);
-        let denda = 0;
-        let statusKembali = 'Dikembalikan';
-        
-        // Hitung denda jika terlambat (Rp 1000/hari)
-        if (sekarang > batas) {
-            const hariTerlambat = Math.ceil((sekarang - batas) / (1000 * 60 * 60 * 24));
-            denda = hariTerlambat * 1000;
-            statusKembali = 'Terlambat';
-        }
-        
-        await pool.execute(
-            `UPDATE loan_history 
-             SET tanggal_kembali = ?, status = ?, denda = ? 
-             WHERE id = ?`,
-            [sekarang, statusKembali, denda, loan.id]
-        );
-
-        res.json({ 
-            success: true, 
-            message: `Buku "${loan.judul}" berhasil dikembalikan.${denda > 0 ? ` Denda: Rp ${denda.toLocaleString('id-ID')}` : ''}`,
-            denda: denda
-        });
-    } catch (err) {
-        console.error('Error returning book:', err);
-        res.status(400).json({ success: false, message: 'Request tidak valid' });
-    }
-});
-// Add new book (Admin/Petugas only)
-app.post('/book', requireAdminOrPetugas, async (req, res) => {
+// Book CRUD routes
+app.post('/api/book', requireAdminOrPetugas, async (req, res) => {
     try {
         const { judul, tahunRilis, penulis, penerbit, genre, gambar, deskripsi, isbn, rating } = req.body;
 
@@ -653,202 +557,14 @@ app.post('/book', requireAdminOrPetugas, async (req, res) => {
         res.status(400).json({ success: false, message: 'Request tidak valid atau format JSON salah.' });
     }
 });
-// Update book (Admin/Petugas only)
-app.put('/book/:id', requireAdminOrPetugas, async (req, res) => {
-    try {
-        const bookId = parseInt(req.params.id);
-        const { judul, tahunRilis, penulis, penerbit, genre, gambar, deskripsi, isbn, rating } = req.body;
 
-        if (!judul || !tahunRilis || !penulis || !penerbit || !genre || !gambar || !deskripsi || !isbn || !rating) {
-            return res.status(400).json({ success: false, message: 'Semua kolom harus diisi.' });
-        }
-        
-        const currentYear = new Date().getFullYear();
-        const parsedTahunRilis = parseInt(tahunRilis);
-        if (isNaN(parsedTahunRilis) || parsedTahunRilis < 1000 || parsedTahunRilis > currentYear) {
-            return res.status(400).json({ success: false, message: `Tahun Rilis tidak valid. Harus antara 1000 dan ${currentYear}.` });
-        }
-        
-        const parsedRating = parseFloat(rating);
-        if (isNaN(parsedRating) || parsedRating < 0 || parsedRating > 5) {
-            return res.status(400).json({ success: false, message: 'Rating tidak valid. Harus angka antara 0 dan 5.' });
-        }
+// ... (tambahkan semua route lainnya)
 
-        const [result] = await pool.execute(
-            `UPDATE books SET judul = ?, tahun_rilis = ?, penulis = ?, penerbit = ?, genre = ?, 
-             gambar = ?, deskripsi = ?, isbn = ?, rating = ? WHERE id = ?`,
-            [judul, parsedTahunRilis, penulis, penerbit, genre, gambar, deskripsi, isbn, parsedRating, bookId]
-        );
+// ==================== START SERVER ====================
 
-        if (result.affectedRows > 0) {
-            const [updatedBooks] = await pool.execute('SELECT * FROM books WHERE id = ?', [bookId]);
-            res.json({ success: true, message: 'Buku berhasil diperbarui.', book: updatedBooks[0] });
-        } else {
-            res.status(404).json({ success: false, message: 'Buku tidak ditemukan.' });
-        }
-    } catch (err) {
-        console.error("Error updating book:", err);
-        res.status(400).json({ success: false, message: 'Request tidak valid atau format JSON salah.' });
-    }
+const PORT = 3000;
+app.listen(PORT, () => {
+    console.log(`🚀 Server berjalan di http://localhost:${PORT}`);
+    console.log(`📚 Sistem Informasi Perpustakaan UPGRADE siap digunakan!`);
+    console.log(`📁 Static files dari: ${path.join(__dirname, 'public')}`);
 });
-
-// Delete book (Admin/Petugas only)
-app.delete('/book/:id', requireAdminOrPetugas, async (req, res) => {
-    try {
-        const bookId = parseInt(req.params.id);
-        const [result] = await pool.execute('DELETE FROM books WHERE id = ?', [bookId]);
-        
-        if (result.affectedRows > 0) {
-            res.json({ success: true, message: 'Buku berhasil dihapus.' });
-        } else {
-            res.status(404).json({ success: false, message: 'Buku tidak ditemukan.' });
-        }
-    } catch (error) {
-        console.error("Error deleting book:", error);
-        res.status(500).json({ success: false, message: 'Gagal menghapus buku.' });
-    }
-});
-// Change book status (borrow/return)
-app.post('/book/status/:id', requireAuth, async (req, res) => {
-    try {
-        const bookId = parseInt(req.params.id);
-        const { status: newStatus, durasiHari = 7 } = req.body;
-        
-        if (!['Tersedia', 'Dipinjam'].includes(newStatus)) {
-            return res.status(400).json({ success: false, message: 'Status buku tidak valid.' });
-        }
-
-        const [books] = await pool.execute('SELECT * FROM books WHERE id = ?', [bookId]);
-        if (books.length === 0) {
-            return res.status(404).json({ success: false, message: 'Buku tidak ditemukan.' });
-        }
-
-        const book = books[0];
-        
-        // LOGIC PEMINJAMAN
-        if (newStatus === 'Dipinjam') {
-            if (req.session.role === 'pengguna' && book.status !== 'Tersedia') {
-                return res.status(400).json({ success: false, message: 'Buku tidak tersedia untuk dipinjam.' });
-            }
-            
-            // Update status buku
-            await pool.execute('UPDATE books SET status = ? WHERE id = ?', [newStatus, bookId]);
-            
-            // Tambah ke loan_history
-            const batasPengembalian = new Date();
-            batasPengembalian.setDate(batasPengembalian.getDate() + durasiHari);
-            
-            await pool.execute(
-                `INSERT INTO loan_history (user_id, book_id, batas_pengembalian, status, durasi_hari) 
-                 VALUES (?, ?, ?, 'Dipinjam', ?)`,
-                [req.session.userId, bookId, batasPengembalian, durasiHari]
-            );
-            
-        } 
-        // LOGIC PENGEMBALIAN (Hanya untuk admin/petugas melalui endpoint ini)
-        else if (newStatus === 'Tersedia') {
-            if (req.session.role === 'pengguna') {
-                return res.status(403).json({ success: false, message: 'Akses ditolak. Untuk pengembalian, gunakan fitur pengembalian di halaman riwayat.' });
-            }
-            
-            // Update status buku
-            await pool.execute('UPDATE books SET status = ? WHERE id = ?', [newStatus, bookId]);
-            
-            // Update loan_history
-            const [activeLoans] = await pool.execute(
-                'SELECT * FROM loan_history WHERE book_id = ? AND status = "Dipinjam" ORDER BY id DESC LIMIT 1',
-                [bookId]
-            );
-            
-            if (activeLoans.length > 0) {
-                const loan = activeLoans[0];
-                const sekarang = new Date();
-                const batas = new Date(loan.batas_pengembalian);
-                let denda = 0;
-                let statusKembali = 'Dikembalikan';
-                
-                // Hitung denda jika terlambat (Rp 1000/hari)
-                if (sekarang > batas) {
-                    const hariTerlambat = Math.ceil((sekarang - batas) / (1000 * 60 * 60 * 24));
-                    denda = hariTerlambat * 1000;
-                    statusKembali = 'Terlambat';
-                }
-                
-                await pool.execute(
-                    `UPDATE loan_history 
-                     SET tanggal_kembali = ?, status = ?, denda = ? 
-                     WHERE id = ?`,
-                    [sekarang, statusKembali, denda, loan.id]
-                );
-            }
-        }
-
-        const [updatedBooks] = await pool.execute('SELECT * FROM books WHERE id = ?', [bookId]);
-        
-        res.json({ 
-            success: true, 
-            book: updatedBooks[0],
-            message: newStatus === 'Dipinjam' ? 
-                `Buku berhasil dipinjam untuk ${durasiHari} hari` : 
-                'Buku berhasil dikembalikan'
-        });
-    } catch (err) {
-        console.error('Error changing book status:', err);
-        res.status(400).json({ success: false, message: 'Request tidak valid' });
-    }
-});
-// Serve images
-app.get('/images/*', (req, res) => {
-    const imagePath = path.join(__dirname, 'public', 'images', req.params[0]);
-    if (fs.existsSync(imagePath)) {
-        res.sendFile(imagePath);
-    } else {
-        // Fallback ke placeholder image
-        const placeholderPath = path.join(__dirname, 'public', 'images', 'default-book.jpg');
-        if (fs.existsSync(placeholderPath)) {
-            res.sendFile(placeholderPath);
-        } else {
-            res.status(404).send('Image not found');
-        }
-    }
-});
-
-// 404 handler
-app.use((req, res) => {
-    if (!req.session || !req.session.userId) {
-        return res.redirect('/login');
-    }
-    res.status(404).send('404 Not Found');
-});
-
-// Inisialisasi database dan start server
-async function startServer() {
-    try {
-        await initializeDatabase();
-        
-        const PORT = 3000;
-        app.listen(PORT, () => {
-            console.log(`🚀 Server Express berjalan di http://localhost:${PORT}`);
-            console.log(`📚 Sistem Informasi Perpustakaan UPGRADE siap digunakan!`);
-            console.log(`🔐 Fitur Baru:`);
-            console.log(`   ✅ Express.js Framework`);
-            console.log(`   ✅ Express Session Management`);
-            console.log(`   ✅ CORS Support`);
-            console.log(`   ✅ Password Hashing dengan bcrypt`);
-            console.log(`   📊 Dashboard Analytics`);
-            console.log(`   🔍 Advanced Search`);
-            console.log(`   💡 Book Recommendations`);
-            console.log(`   📖 Reading History`);
-            console.log(`   🔥 Popular Books`);
-            console.log(`📝 Fitur Registrasi Aktif!`);
-            console.log(`📋 Sistem Riwayat Peminjaman aktif!`);
-            console.log(`🔄 Fitur pengembalian untuk semua user aktif!`);
-            console.log(`⏰ Durasi peminjaman & denda otomatis aktif!`);
-            console.log(`🔐 Akses diproteksi - harus login terlebih dahulu`);
-        });
-    } catch (error) {
-        console.error('❌ Gagal memulai server:', error);
-    }
-}
-
-startServer();

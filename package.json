@@ -1,36 +1,23 @@
 {
   "name": "sistem-perpustakaan",
   "version": "2.0.0",
-  "description": "Sistem Informasi Perpustakaan dengan Fitur Lengkap",
-  "main": "Server.js",
+  "description": "Sistem Perpustakaan",
+  "main": "api/index.js",
   "scripts": {
-    "start": "node Server.js",
+    "start": "node api/index.js",
     "dev": "node Server.js",
     "test-db": "node test-db.js",
-    "reset-db": "node reset-db.js",
-    "build": "echo 'No build step required'",
-    "vercel-build": "echo 'No build step required'"
+    "install-deps": "npm install express express-session cors bcrypt mysql2 dotenv"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "express-session": "^1.17.3",
+    "cors": "^2.8.5",
+    "bcrypt": "^5.1.1",
+    "mysql2": "^3.6.5",
+    "dotenv": "^16.3.1"
   },
   "engines": {
     "node": ">=18.0.0"
-  },
-  "dependencies": {
-    "bcrypt": "^5.1.1",
-    "cors": "^2.8.5",
-    "dotenv": "^17.2.3",
-    "express": "^4.18.2",
-    "express-session": "^1.17.3",
-    "mysql2": "^3.15.2"
-  },
-  "keywords": [
-    "perpustakaan",
-    "library",
-    "books",
-    "nodejs",
-    "mysql",
-    "dashboard",
-    "analytics"
-  ],
-  "author": "Your Name",
-  "license": "MIT"
+  }
 }
