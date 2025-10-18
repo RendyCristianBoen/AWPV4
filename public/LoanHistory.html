@@ -193,7 +193,8 @@
                 showLoadingState();
                 const response = await fetch('/loan-history');
                 if (response.status === 401) {
-                    window.location.href = '/login';
+                    console.log('401 response - but not redirecting for testing');
+                    // window.location.href = '/login';
                     return;
                 }
                 const result = await response.json();

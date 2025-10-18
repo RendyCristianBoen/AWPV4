@@ -91,7 +91,8 @@
             try {
                 const res = await fetch('/data');
                 if (res.status === 401) {
-                    window.location.href = '/login';
+                    console.log('401 response - but not redirecting for testing');
+                    // window.location.href = '/login';
                     return;
                 }
                 if (!res.ok) {
@@ -274,15 +275,20 @@
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-            // CEK LOGIN DENGAN LEBIH KETAT
+            // Temporarily disable strict login check for testing
             const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
             const userRole = localStorage.getItem('userRole');
             const userName = localStorage.getItem('userName');
             
-            if (!isLoggedIn || !userRole || !userName) {
-                window.location.href = '/login';
-                return;
-            }
+            console.log('Index page - localStorage check:', {
+                isLoggedIn, userRole, userName
+            });
+            
+            // Temporarily comment out redirect
+            // if (!isLoggedIn || !userRole || !userName) {
+            //     window.location.href = '/login';
+            //     return;
+            // }
 
             // Dark mode ditangani global oleh /app.js
 
@@ -321,6 +327,6 @@
             }
         }
     </script>
-    <script src="js/app.js"></script>
+    <script src="js/app.js?v=20241220"></script>
 </body>
 </html>
