@@ -17,11 +17,18 @@
   // ---- Session sync with backend ----
   app.syncSession = async function() {
     try {
+      console.log('Session sync - checking localStorage before:', {
+        isLoggedIn: ls.getItem('isLoggedIn'),
+        userName: ls.getItem('userName')
+      });
+      
       const response = await fetch('/check-session', {
         method: 'GET',
         credentials: 'include'
       });
       const result = await response.json();
+      
+      console.log('Session sync - backend response:', result);
       
       if (result.success) {
         if (result.isLoggedIn && result.user) {
@@ -30,16 +37,16 @@
           ls.setItem('userName', result.user.nama);
           ls.setItem('userRole', result.user.role);
           ls.setItem('userId', result.user.id);
+          console.log('Session sync - updated localStorage with backend data');
         } else {
-          // Clear localStorage if not logged in
-          ls.removeItem('isLoggedIn');
-          ls.removeItem('userName');
-          ls.removeItem('userRole');
-          ls.removeItem('userId');
+          // DON'T clear localStorage if backend says not logged in
+          // This might be due to session issues in Vercel
+          console.log('Session sync - backend says not logged in, but keeping localStorage');
         }
       }
     } catch (error) {
       console.error('Session sync error:', error);
+      // Don't clear localStorage on error
     }
   };
 
@@ -196,7 +203,13 @@
   };
 
   async function autoInit(){
-    await app.syncSession(); // Sync with backend session first
+    // Temporarily disable session sync for testing
+    // await app.syncSession(); // Sync with backend session first
+    console.log('Auto init - localStorage status:', {
+      isLoggedIn: ls.getItem('isLoggedIn'),
+      userName: ls.getItem('userName')
+    });
+    
     app.ensureAuth();
     app.enablePerformanceMode();
     app.updateNav();

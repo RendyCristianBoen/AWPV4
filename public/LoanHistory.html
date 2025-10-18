@@ -703,10 +703,15 @@
             const userRole = localStorage.getItem('userRole');
             const userName = localStorage.getItem('userName');
             
-            if (!isLoggedIn || !userRole || !userName) {
-                window.location.href = '/login';
-                return;
-            }
+            console.log('LoanHistory page - localStorage check:', {
+                isLoggedIn, userRole, userName
+            });
+            
+            // Temporarily comment out redirect
+            // if (!isLoggedIn || !userRole || !userName) {
+            //     window.location.href = '/login';
+            //     return;
+            // }
 
             // Dark mode ditangani terpusat oleh app.js (attachModeToggle)
             // Tidak perlu handler duplikat di halaman ini.

@@ -719,10 +719,15 @@
         const userRole = localStorage.getItem('userRole');
         const userName = localStorage.getItem('userName');
         
-        if (!isLoggedIn || !userRole || !userName) {
-            window.location.href = '/login';
-            return;
-        }
+        console.log('Catalog page - localStorage check:', {
+            isLoggedIn, userRole, userName
+        });
+        
+        // Temporarily comment out redirect
+        // if (!isLoggedIn || !userRole || !userName) {
+        //     window.location.href = '/login';
+        //     return;
+        // }
 
         updateNav();
         fetchAndDisplayBooks();
