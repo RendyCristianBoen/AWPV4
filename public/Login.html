@@ -217,6 +217,16 @@
         // NAV: Saat belum login, tampilkan hanya About + Login/Daftar
         function updateNav() {
             const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
+            
+            console.log('=== LOGIN PAGE NAV UPDATE ===');
+            console.log('Login page - isLoggedIn:', isLoggedIn);
+            console.log('Login page - localStorage:', {
+                isLoggedIn: localStorage.getItem('isLoggedIn'),
+                userName: localStorage.getItem('userName'),
+                userRole: localStorage.getItem('userRole'),
+                userId: localStorage.getItem('userId')
+            });
+            
             const navUsername = document.getElementById('nav-username');
             const navLogout = document.getElementById('nav-logout');
             const navLogin = document.getElementById('nav-login');
@@ -229,6 +239,8 @@
             if (isLoggedIn) {
                 const userName = localStorage.getItem('userName');
                 const userRole = localStorage.getItem('userRole');
+                console.log('Login page - user is logged in, showing logged-in nav');
+                
                 if (navUsername) {
                     navUsername.style.display = 'flex';
                     navUsername.textContent = `👋 Halo, ${userName} (${userRole})`;
@@ -238,11 +250,13 @@
                 if (navRegister) navRegister.style.display = 'none';
                 
                 // Jika user sudah login dan berada di halaman login, redirect ke home
-                console.log('User already logged in, redirecting to home...');
+                console.log('Login page - user already logged in, redirecting to home...');
                 setTimeout(() => {
+                    console.log('Login page - executing redirect to home');
                     window.location.href = '/';
                 }, 1000);
             } else {
+                console.log('Login page - user is not logged in, showing guest nav');
                 // Sembunyikan Home/Dashboard/Catalog/LoanHistory
                 document.querySelectorAll('nav [data-page="home"], nav [data-page="dashboard"], nav [data-page="catalog"], nav [data-page="loan-history"]').forEach(el => el.style.display = 'none');
                 if (navUsername) navUsername.style.display = 'none';
@@ -254,6 +268,8 @@
             // Sembunyikan link halaman saat ini (Login) jika ada
             const currentItem = document.querySelector('nav [href="/login"]')?.parentElement;
             if (currentItem) currentItem.style.display = 'none';
+            
+            console.log('=== LOGIN PAGE NAV UPDATE COMPLETE ===');
         }
 
         async function handleLogout(event) {

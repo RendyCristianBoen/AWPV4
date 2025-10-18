@@ -22,6 +22,10 @@
         userName: ls.getItem('userName')
       });
       
+      // Sementara disable session sync untuk testing
+      console.log('Session sync - disabled for testing, using localStorage only');
+      return;
+      
       const response = await fetch('/check-session', {
         method: 'GET',
         credentials: 'include'
@@ -134,7 +138,14 @@
     const user = app.getUser();
     const key = getPageKey();
     
+    console.log('=== NAVIGATION UPDATE ===');
     console.log('updateNav - isLogged:', isLogged, 'user:', user, 'page:', key);
+    console.log('updateNav - localStorage:', {
+      isLoggedIn: ls.getItem('isLoggedIn'),
+      userName: ls.getItem('userName'),
+      userRole: ls.getItem('userRole'),
+      userId: ls.getItem('userId')
+    });
     
     // Set body auth class for CSS-based fallbacks
     try {
@@ -143,12 +154,23 @@
     } catch(_) {}
 
     const nav = document.querySelector('nav');
-    if (!nav) return;
+    if (!nav) {
+      console.log('updateNav - nav element not found');
+      return;
+    }
+    
     const hideSelector = 'nav [data-page="home"], nav [data-page="dashboard"], nav [data-page="catalog"], nav [data-page="loan-history"]';
     const loginEl = document.getElementById('nav-login');
     const registerEl = document.getElementById('nav-register');
     const userEl = document.getElementById('nav-username');
     const logoutEl = document.getElementById('nav-logout');
+
+    console.log('updateNav - nav elements found:', {
+      loginEl: !!loginEl,
+      registerEl: !!registerEl,
+      userEl: !!userEl,
+      logoutEl: !!logoutEl
+    });
 
     // Reset tampil default
     nav.querySelectorAll('ul li').forEach(li=>{
@@ -158,6 +180,7 @@
     });
 
     if (isLogged) {
+      console.log('updateNav - user is logged in, showing logged-in navigation');
       // User sudah login: tampilkan menu yang sesuai
       if (loginEl) loginEl.style.display = 'none';
       if (registerEl) registerEl.style.display = 'none';
@@ -170,6 +193,7 @@
       // Tampilkan menu yang bisa diakses user yang sudah login
       nav.querySelectorAll(hideSelector).forEach(el => el.style.display = 'flex');
     } else {
+      console.log('updateNav - user is not logged in, showing guest navigation');
       // Belum login: sembunyikan menu yang butuh auth
       nav.querySelectorAll(hideSelector).forEach(el => el.style.display = 'none');
       if (userEl) userEl.style.display = 'none';
@@ -183,6 +207,8 @@
       const current = nav.querySelector(`*[data-page="${key}"]`);
       if (current) current.style.display = 'none';
     }
+    
+    console.log('=== NAVIGATION UPDATE COMPLETE ===');
   };
 
   // ---- Theme (dark mode) ----
@@ -266,17 +292,8 @@
       userName: ls.getItem('userName')
     });
     
-    // Sync session dengan backend tapi tidak terlalu agresif
-    try {
-      await app.syncSession();
-    } catch (error) {
-      console.log('Session sync failed, using localStorage:', error);
-    }
-    
-    // Delay auth guard untuk memastikan localStorage sudah loaded
-    setTimeout(() => {
-      app.ensureAuth();
-    }, 100);
+    // Sementara disable session sync dan auth guard untuk testing
+    console.log('Auto init - session sync and auth guard disabled for testing');
     
     app.enablePerformanceMode();
     app.updateNav();
