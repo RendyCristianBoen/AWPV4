@@ -256,28 +256,38 @@ app.get('/check-session', (req, res) => {
     }
 });
 
-// Protected routes - temporarily allow all for testing
+// Protected routes - require authentication
 app.get('/', (req, res) => {
     console.log('Home route - req.session:', req.session);
     console.log('Home route - session ID:', req.sessionID);
     
-    // Temporarily serve the page without session check
-    console.log('Home route - serving Index.html (bypassing session check)');
+    if (!req.session || !req.session.userId) {
+        console.log('Home route - redirecting to login (no session)');
+        return res.redirect('/login');
+    }
+    
+    console.log('Home route - serving Index.html (session valid)');
     res.sendFile(path.join(__dirname, '../public', 'Index.html'));
 });
 
 app.get('/Catalog.html', (req, res) => {
-    // Temporarily bypass session check
+    if (!req.session || !req.session.userId) {
+        return res.redirect('/login');
+    }
     res.sendFile(path.join(__dirname, '../public', 'Catalog.html'));
 });
 
 app.get('/LoanHistory.html', (req, res) => {
-    // Temporarily bypass session check
+    if (!req.session || !req.session.userId) {
+        return res.redirect('/login');
+    }
     res.sendFile(path.join(__dirname, '../public', 'LoanHistory.html'));
 });
 
 app.get('/Dashboard.html', (req, res) => {
-    // Temporarily bypass session check
+    if (!req.session || !req.session.userId) {
+        return res.redirect('/login');
+    }
     res.sendFile(path.join(__dirname, '../public', 'Dashboard.html'));
 });
 

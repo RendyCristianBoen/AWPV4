@@ -39,14 +39,21 @@
           ls.setItem('userId', result.user.id);
           console.log('Session sync - updated localStorage with backend data');
         } else {
-          // DON'T clear localStorage if backend says not logged in
-          // This might be due to session issues in Vercel
-          console.log('Session sync - backend says not logged in, but keeping localStorage');
+          // Clear localStorage if backend says not logged in
+          console.log('Session sync - backend says not logged in, clearing localStorage');
+          ls.removeItem('isLoggedIn');
+          ls.removeItem('userName');
+          ls.removeItem('userRole');
+          ls.removeItem('userId');
         }
       }
     } catch (error) {
       console.error('Session sync error:', error);
-      // Don't clear localStorage on error
+      // Clear localStorage on error to be safe
+      ls.removeItem('isLoggedIn');
+      ls.removeItem('userName');
+      ls.removeItem('userRole');
+      ls.removeItem('userId');
     }
   };
 
@@ -68,13 +75,12 @@
     const key = getPageKey();
     const publicPages = ['about','login','register'];
     
-    // Temporarily disable auth guard for testing
     console.log('Auth guard - page:', key, 'isLoggedIn:', app.isLoggedIn());
     
-    // if (!app.isLoggedIn() && !publicPages.includes(key)) {
-    //   // Halaman dilindungi, redirect ke login
-    //   try { location.replace('/login'); } catch(_) { location.href = '/login'; }
-    // }
+    if (!app.isLoggedIn() && !publicPages.includes(key)) {
+      // Halaman dilindungi, redirect ke login
+      try { location.replace('/login'); } catch(_) { location.href = '/login'; }
+    }
   };
 
   // ---- Navigation updater ----
@@ -203,8 +209,7 @@
   };
 
   async function autoInit(){
-    // Temporarily disable session sync for testing
-    // await app.syncSession(); // Sync with backend session first
+    await app.syncSession(); // Sync with backend session first
     console.log('Auto init - localStorage status:', {
       isLoggedIn: ls.getItem('isLoggedIn'),
       userName: ls.getItem('userName')

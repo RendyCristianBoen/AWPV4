@@ -185,7 +185,8 @@
                     submitButton.disabled = true;
                     
                     setTimeout(() => {
-                        window.location.href = '/';
+                        // Force reload to ensure session sync
+                        window.location.replace('/');
                     }, 1500);
                 } else {
                     const errorElement = document.getElementById('passwordError');
