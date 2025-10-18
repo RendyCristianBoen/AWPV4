@@ -60,10 +60,14 @@
   app.ensureAuth = function(){
     const key = getPageKey();
     const publicPages = ['about','login','register'];
-    if (!app.isLoggedIn() && !publicPages.includes(key)) {
-      // Halaman dilindungi, redirect ke login
-      try { location.replace('/login'); } catch(_) { location.href = '/login'; }
-    }
+    
+    // Temporarily disable auth guard for testing
+    console.log('Auth guard - page:', key, 'isLoggedIn:', app.isLoggedIn());
+    
+    // if (!app.isLoggedIn() && !publicPages.includes(key)) {
+    //   // Halaman dilindungi, redirect ke login
+    //   try { location.replace('/login'); } catch(_) { location.href = '/login'; }
+    // }
   };
 
   // ---- Navigation updater ----

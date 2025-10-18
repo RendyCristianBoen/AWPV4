@@ -40,9 +40,7 @@ const app = express();
 
 // Middleware setup
 app.use(cors({
-    origin: process.env.NODE_ENV === 'production' ? 
-        ['https://sistem-perpustakaan.vercel.app', 'https://*.vercel.app'] : 
-        'http://localhost:3000',
+    origin: true, // Allow all origins for now
     credentials: true
 }));
 
@@ -52,14 +50,15 @@ app.use(express.static(path.join(__dirname, '../public')));
 // Session configuration for Vercel
 app.use(session({
     secret: process.env.SESSION_SECRET || 'perpustakaan-secret-key-2024',
-    resave: true,
-    saveUninitialized: true,
+    resave: false,
+    saveUninitialized: false,
     cookie: {
         secure: false, // Set to false for Vercel
-        httpOnly: true,
+        httpOnly: false, // Set to false to allow client-side access
         maxAge: 24 * 60 * 60 * 1000, // 24 hours
         sameSite: 'lax'
-    }
+    },
+    name: 'perpustakaan.sid' // Custom session name
 }));
 
 // Middleware to ensure database connection
@@ -232,7 +231,11 @@ app.post('/logout', (req, res) => {
 
 // Check session status
 app.get('/check-session', (req, res) => {
+    console.log('Session check - req.session:', req.session);
+    console.log('Session check - session ID:', req.sessionID);
+    
     if (req.session && req.session.userId) {
+        console.log('Session valid - user ID:', req.session.userId);
         res.json({
             success: true,
             isLoggedIn: true,
@@ -244,6 +247,7 @@ app.get('/check-session', (req, res) => {
             }
         });
     } else {
+        console.log('Session invalid or no user ID');
         res.json({
             success: true,
             isLoggedIn: false,
@@ -252,32 +256,28 @@ app.get('/check-session', (req, res) => {
     }
 });
 
-// Protected routes
+// Protected routes - temporarily allow all for testing
 app.get('/', (req, res) => {
-    if (!req.session || !req.session.userId) {
-        return res.redirect('/login');
-    }
+    console.log('Home route - req.session:', req.session);
+    console.log('Home route - session ID:', req.sessionID);
+    
+    // Temporarily serve the page without session check
+    console.log('Home route - serving Index.html (bypassing session check)');
     res.sendFile(path.join(__dirname, '../public', 'Index.html'));
 });
 
 app.get('/Catalog.html', (req, res) => {
-    if (!req.session || !req.session.userId) {
-        return res.redirect('/login');
-    }
+    // Temporarily bypass session check
     res.sendFile(path.join(__dirname, '../public', 'Catalog.html'));
 });
 
 app.get('/LoanHistory.html', (req, res) => {
-    if (!req.session || !req.session.userId) {
-        return res.redirect('/login');
-    }
+    // Temporarily bypass session check
     res.sendFile(path.join(__dirname, '../public', 'LoanHistory.html'));
 });
 
 app.get('/Dashboard.html', (req, res) => {
-    if (!req.session || !req.session.userId) {
-        return res.redirect('/login');
-    }
+    // Temporarily bypass session check
     res.sendFile(path.join(__dirname, '../public', 'Dashboard.html'));
 });
 
