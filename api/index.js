@@ -55,11 +55,11 @@ app.use(express.json());
 const publicPath = path.join(__dirname, '..', 'public');
 app.use(express.static(publicPath));
 
-// ✅ FIX: Session configuration for Vercel
+// ✅ FIX: Session configuration for Vercel - SIMPLIFIED
 app.use(session({
     secret: process.env.SESSION_SECRET || 'perpustakaan-secret-key-2024-very-long-secret',
     resave: false,
-    saveUninitialized: false,
+    saveUninitialized: true,
     proxy: true,
     cookie: {
         secure: process.env.NODE_ENV === 'production',
@@ -69,12 +69,6 @@ app.use(session({
     },
     name: 'lib_session'
 }));
-
-// Session debugging middleware
-app.use((req, res, next) => {
-    console.log('Session ID:', req.sessionID);
-    next();
-});
 
 // Middleware to ensure database connection
 app.use(async (req, res, next) => {
@@ -87,23 +81,37 @@ app.use(async (req, res, next) => {
     }
 });
 
-// ✅ FIX: Authentication middleware - ALLOW HTML ACCESS WITHOUT LOGIN
+// ✅ FIX: SIMPLIFIED Authentication middleware
 function requireAuth(req, res, next) {
-    // Allow access to HTML files without authentication
-    if (req.path.endsWith('.html') || req.path === '/') {
+    // Allow access to public paths without authentication
+    const publicPaths = ['/login', '/register', '/about', '/health', '/check-session', '/logout'];
+    const isPublicPath = publicPaths.includes(req.path) || 
+                        req.path.endsWith('.css') || 
+                        req.path.endsWith('.js') || 
+                        req.path.startsWith('/images/');
+    
+    if (isPublicPath) {
         return next();
     }
     
-    // Require authentication only for API routes
+    // For API routes, check session but don't redirect
     if (req.session && req.session.userId) {
         return next();
     } else {
-        return res.status(401).json({ 
-            success: false, 
-            message: 'Silakan login terlebih dahulu'
-        });
+        // For HTML pages, redirect to login
+        if (req.path.endsWith('.html') || req.path === '/') {
+            return res.redirect('/login');
+        } else {
+            return res.status(401).json({ 
+                success: false, 
+                message: 'Silakan login terlebih dahulu'
+            });
+        }
     }
 }
+
+// Apply auth middleware
+app.use(requireAuth);
 
 // Admin/Petugas middleware
 function requireAdminOrPetugas(req, res, next) {
@@ -113,7 +121,7 @@ function requireAdminOrPetugas(req, res, next) {
     res.status(403).json({ success: false, message: 'Akses ditolak. Hanya admin atau petugas yang dapat mengakses fitur ini.' });
 }
 
-// ✅ FIX: Serve HTML files - NO AUTH REQUIRED
+// ✅ FIX: Serve HTML files
 app.get('/', (req, res) => {
     res.sendFile(path.join(publicPath, 'Index.html'));
 });
@@ -138,11 +146,11 @@ app.get('/LoanHistory.html', (req, res) => {
     res.sendFile(path.join(publicPath, 'LoanHistory.html'));
 });
 
-app.get('/dashboard.html', (req, res) => {
-    res.sendFile(path.join(publicPath, 'dashboard.html'));
+app.get('/Dashboard.html', (req, res) => {
+    res.sendFile(path.join(publicPath, 'Dashboard.html'));
 });
 
-// ✅ FIX: Serve static files explicitly
+// ✅ FIX: Serve static files
 app.get('/css/*', (req, res) => {
     const cssPath = path.join(publicPath, 'css', req.params[0]);
     if (fs.existsSync(cssPath)) {
@@ -170,7 +178,7 @@ app.get('/images/*', (req, res) => {
     }
 });
 
-// Authentication routes - NO AUTH REQUIRED
+// Authentication routes
 app.post('/login', async (req, res) => {
     try {
         console.log('Login attempt:', req.body.username);
@@ -297,18 +305,30 @@ app.post('/register', async (req, res) => {
     }
 });
 
+// ✅ FIX: SIMPLIFIED Logout route - NO AUTH CHECK
 app.post('/logout', (req, res) => {
+    console.log('Logout attempt - session before:', req.session);
+    
+    // Always clear session and cookie, regardless of auth state
     req.session.destroy((err) => {
         if (err) {
-            return res.status(500).json({ success: false, message: 'Gagal logout' });
+            console.error('Session destroy error:', err);
         }
         res.clearCookie('lib_session');
-        res.json({ success: true, message: 'Logout berhasil' });
+        
+        console.log('Logout successful');
+        res.json({ 
+            success: true, 
+            message: 'Logout berhasil',
+            redirectTo: '/login'
+        });
     });
 });
 
 // CHECK SESSION ENDPOINT - NO AUTH REQUIRED
 app.get('/check-session', (req, res) => {
+    console.log('Check session - current session:', req.session);
+    
     if (req.session && req.session.userId) {
         res.json({
             success: true,
@@ -321,13 +341,21 @@ app.get('/check-session', (req, res) => {
             }
         });
     } else {
-        res.json({ success: true, isLoggedIn: false });
+        res.json({ 
+            success: true, 
+            isLoggedIn: false,
+            message: 'No active session'
+        });
     }
 });
 
-// ✅ FIX: API Routes - REQUIRE AUTH
-app.get('/data', requireAuth, async (req, res) => {
+// ✅ FIX: API Routes dengan auth check yang konsisten
+app.get('/data', async (req, res) => {
     try {
+        if (!req.session.userId) {
+            return res.status(401).json({ success: false, message: 'Silakan login terlebih dahulu' });
+        }
+        
         const [books] = await pool.execute('SELECT * FROM books');
         res.json(books);
     } catch (error) {
@@ -336,8 +364,12 @@ app.get('/data', requireAuth, async (req, res) => {
     }
 });
 
-app.get('/dashboard-stats', requireAuth, async (req, res) => {
+app.get('/dashboard-stats', async (req, res) => {
     try {
+        if (!req.session.userId) {
+            return res.status(401).json({ success: false, message: 'Silakan login terlebih dahulu' });
+        }
+        
         const [totalBooks] = await pool.execute('SELECT COUNT(*) as total FROM books');
         const [totalUsers] = await pool.execute('SELECT COUNT(*) as total FROM users');
         const [activeLoans] = await pool.execute('SELECT COUNT(*) as total FROM loan_history WHERE status = "Dipinjam"');
@@ -360,8 +392,12 @@ app.get('/dashboard-stats', requireAuth, async (req, res) => {
     }
 });
 
-app.get('/search', requireAuth, async (req, res) => {
+app.get('/search', async (req, res) => {
     try {
+        if (!req.session.userId) {
+            return res.status(401).json({ success: false, message: 'Silakan login terlebih dahulu' });
+        }
+        
         const { q: query, genre, minRating, year, author } = req.query;
         
         let sql = `SELECT * FROM books WHERE 1=1`;
@@ -409,8 +445,12 @@ app.get('/search', requireAuth, async (req, res) => {
     }
 });
 
-app.get('/recommendations', requireAuth, async (req, res) => {
+app.get('/recommendations', async (req, res) => {
     try {
+        if (!req.session.userId) {
+            return res.status(401).json({ success: false, message: 'Silakan login terlebih dahulu' });
+        }
+        
         const { bookId, genre } = req.query;
         
         let recommendations = [];
@@ -451,8 +491,12 @@ app.get('/recommendations', requireAuth, async (req, res) => {
     }
 });
 
-app.get('/popular-books', requireAuth, async (req, res) => {
+app.get('/popular-books', async (req, res) => {
     try {
+        if (!req.session.userId) {
+            return res.status(401).json({ success: false, message: 'Silakan login terlebih dahulu' });
+        }
+        
         const [popularBooks] = await pool.execute(`
             SELECT b.*, COUNT(lh.id) as loan_count
             FROM books b 
@@ -469,8 +513,12 @@ app.get('/popular-books', requireAuth, async (req, res) => {
     }
 });
 
-app.get('/reading-history', requireAuth, async (req, res) => {
+app.get('/reading-history', async (req, res) => {
     try {
+        if (!req.session.userId) {
+            return res.status(401).json({ success: false, message: 'Silakan login terlebih dahulu' });
+        }
+        
         const [readingHistory] = await pool.execute(`
             SELECT lh.*, b.judul, b.penulis, b.gambar, b.genre, b.rating
             FROM loan_history lh 
@@ -487,8 +535,12 @@ app.get('/reading-history', requireAuth, async (req, res) => {
     }
 });
 
-app.get('/loan-history', requireAuth, async (req, res) => {
+app.get('/loan-history', async (req, res) => {
     try {
+        if (!req.session.userId) {
+            return res.status(401).json({ success: false, message: 'Silakan login terlebih dahulu' });
+        }
+        
         let query = `
             SELECT lh.*, b.judul, b.penulis, b.gambar, u.nama as nama_peminjam 
             FROM loan_history lh 
@@ -514,8 +566,12 @@ app.get('/loan-history', requireAuth, async (req, res) => {
     }
 });
 
-app.get('/book/:id', requireAuth, async (req, res) => {
+app.get('/book/:id', async (req, res) => {
     try {
+        if (!req.session.userId) {
+            return res.status(401).json({ success: false, message: 'Silakan login terlebih dahulu' });
+        }
+        
         const bookId = parseInt(req.params.id);
         const [books] = await pool.execute('SELECT * FROM books WHERE id = ?', [bookId]);
         if (books.length > 0) {
@@ -530,8 +586,16 @@ app.get('/book/:id', requireAuth, async (req, res) => {
 });
 
 // Book CRUD routes
-app.post('/book', requireAdminOrPetugas, async (req, res) => {
+app.post('/book', async (req, res) => {
     try {
+        if (!req.session.userId) {
+            return res.status(401).json({ success: false, message: 'Silakan login terlebih dahulu' });
+        }
+        
+        if (!(req.session.role === 'admin' || req.session.role === 'petugas')) {
+            return res.status(403).json({ success: false, message: 'Akses ditolak. Hanya admin atau petugas yang dapat mengakses fitur ini.' });
+        }
+
         const { judul, tahunRilis, penulis, penerbit, genre, gambar, deskripsi, isbn, rating } = req.body;
 
         if (!judul || !tahunRilis || !penulis || !penerbit || !genre || !gambar || !deskripsi || !isbn || !rating) {
@@ -576,8 +640,16 @@ app.post('/book', requireAdminOrPetugas, async (req, res) => {
     }
 });
 
-app.put('/book/:id', requireAdminOrPetugas, async (req, res) => {
+app.put('/book/:id', async (req, res) => {
     try {
+        if (!req.session.userId) {
+            return res.status(401).json({ success: false, message: 'Silakan login terlebih dahulu' });
+        }
+        
+        if (!(req.session.role === 'admin' || req.session.role === 'petugas')) {
+            return res.status(403).json({ success: false, message: 'Akses ditolak. Hanya admin atau petugas yang dapat mengakses fitur ini.' });
+        }
+
         const bookId = parseInt(req.params.id);
         const { judul, tahunRilis, penulis, penerbit, genre, gambar, deskripsi, isbn, rating } = req.body;
 
@@ -614,8 +686,16 @@ app.put('/book/:id', requireAdminOrPetugas, async (req, res) => {
     }
 });
 
-app.delete('/book/:id', requireAdminOrPetugas, async (req, res) => {
+app.delete('/book/:id', async (req, res) => {
     try {
+        if (!req.session.userId) {
+            return res.status(401).json({ success: false, message: 'Silakan login terlebih dahulu' });
+        }
+        
+        if (!(req.session.role === 'admin' || req.session.role === 'petugas')) {
+            return res.status(403).json({ success: false, message: 'Akses ditolak. Hanya admin atau petugas yang dapat mengakses fitur ini.' });
+        }
+
         const bookId = parseInt(req.params.id);
         const [result] = await pool.execute('DELETE FROM books WHERE id = ?', [bookId]);
         
@@ -631,8 +711,12 @@ app.delete('/book/:id', requireAdminOrPetugas, async (req, res) => {
 });
 
 // Book status change
-app.post('/book/status/:id', requireAuth, async (req, res) => {
+app.post('/book/status/:id', async (req, res) => {
     try {
+        if (!req.session.userId) {
+            return res.status(401).json({ success: false, message: 'Silakan login terlebih dahulu' });
+        }
+        
         const bookId = parseInt(req.params.id);
         const { status: newStatus, durasiHari = 7 } = req.body;
         
@@ -713,8 +797,12 @@ app.post('/book/status/:id', requireAuth, async (req, res) => {
 });
 
 // Return book
-app.post('/return-book/:id', requireAuth, async (req, res) => {
+app.post('/return-book/:id', async (req, res) => {
     try {
+        if (!req.session.userId) {
+            return res.status(401).json({ success: false, message: 'Silakan login terlebih dahulu' });
+        }
+        
         const loanId = parseInt(req.params.id);
         
         let query = 'SELECT lh.*, b.judul FROM loan_history lh JOIN books b ON lh.book_id = b.id WHERE lh.id = ?';
@@ -775,7 +863,8 @@ app.get('/health', async (req, res) => {
         res.json({ 
             status: 'OK', 
             database: 'Connected',
-            timestamp: new Date().toISOString() 
+            timestamp: new Date().toISOString(),
+            session: req.session ? 'Session exists' : 'No session'
         });
     } catch (error) {
         res.status(500).json({ 
