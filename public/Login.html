@@ -1,343 +1,204 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Login - Sistem Informasi Perpustakaan</title>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css" />
-    <link rel="stylesheet" href="css/Style.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Login - Sistem Informasi Perpustakaan</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css" />
+  <link rel="stylesheet" href="css/Style.css">
 </head>
 <body>
-    <!-- NAVIGATION - FIXED -->
-    <nav>
-        <ul>
-            <li data-page="home"><a href="/">🏠 Home</a></li>
-            <li data-page="about"><a href="/about">ℹ️ About</a></li>
+  <!-- NAVIGATION -->
+  <nav>
+    <ul>
+      <li data-page="home"><a href="/">🏠 Home</a></li>
+      <li data-page="about"><a href="/about">ℹ️ About</a></li>
 
-            <!-- Navigation untuk user yang belum login -->
-            <li id="nav-login" class="nav-fade">
-                <a href="/login">🚪 Login</a>
-            </li>
-            <li id="nav-register" class="nav-fade">
-                <a href="/register">📝 Daftar</a>
-            </li>
+      <!-- Guest -->
+      <li id="nav-login"><a href="/login">🚪 Login</a></li>
+      <li id="nav-register"><a href="/register">📝 Daftar</a></li>
 
-            <!-- Navigation untuk user yang sudah login -->
-            <li id="nav-username" class="nav-fade"></li>
-            <li id="nav-logout" class="nav-fade">
-                <a href="#" id="logout-link">🚪 Logout</a>
-            </li>
-        </ul>
-    </nav>
+      <!-- Logged-in -->
+      <li id="nav-username" ></li>
+      <li id="nav-logout" ><a href="#" id="logout-link">🚪 Logout</a></li>
+    </ul>
+  </nav>
 
-    <div class="toggle-container">
-        <button id="mode-toggle" aria-label="Toggle mode gelap/terang">🌓 Mode Gelap</button>
-    </div>
+  <div class="toggle-container">
+    <button id="mode-toggle" aria-label="Toggle mode">🌓 Mode Gelap</button>
+  </div>
 
-    <!-- HERO SECTION -->
-    <div class="login-hero">
-        <div class="hero-content">
-            <h1>📚 Selamat Datang di Perpustakaan Digital</h1>
-            <p>Jelajahi dunia pengetahuan dengan koleksi 100+ buku berkualitas</p>
-            <div class="hero-stats">
-                <div class="stat-item">
-                    <span class="stat-number">100+</span>
-                    <span class="stat-label">Buku Lengkap</span>
-                </div>
-                <div class="stat-item">
-                    <span class="stat-number">8+</span>
-                    <span class="stat-label">Genre Beragam</span>
-                </div>
-                <div class="stat-item">
-                    <span class="stat-number">⭐ 4.5+</span>
-                    <span class="stat-label">Rating Tinggi</span>
-                </div>
-            </div>
+  <!-- LOGIN -->
+  <div class="login-container-wide">
+    <div class="login-card">
+      <div class="login-header">
+        <h2>🔐 Login Sistem Perpustakaan</h2>
+        <p>Masuk untuk mengakses koleksi buku lengkap</p>
+      </div>
+
+      <form id="loginForm" class="wide-form">
+        <div class="form-row">
+          <div class="form-group-wide">
+            <label for="username">👤 Username:</label>
+            <input type="text" id="username" name="username" required placeholder="Masukkan username Anda" />
+            <div class="error-message" id="usernameError"></div>
+          </div>
+
+          <div class="form-group-wide">
+            <label for="password">🔒 Password:</label>
+            <input type="password" id="password" name="password" required placeholder="Masukkan password Anda" />
+            <div class="error-message" id="passwordError"></div>
+          </div>
         </div>
-    </div>
 
-    <!-- LOGIN CONTAINER -->
-    <div class="login-container-wide">
-        <div class="login-card">
-            <div class="login-header">
-                <h2>🔐 Login Sistem Perpustakaan</h2>
-                <p>Masuk untuk mengakses koleksi buku lengkap</p>
-            </div>
+        <button type="submit" class="login-btn-wide">🚀 Login Sekarang</button>
 
-            <form id="loginForm" class="wide-form">
-                <div class="form-row">
-                    <div class="form-group-wide">
-                        <label for="username">👤 Username:</label>
-                        <input type="text" id="username" name="username" required placeholder="Masukkan username Anda" />
-                        <div class="error-message" id="usernameError"></div>
-                    </div>
-
-                    <div class="form-group-wide">
-                        <label for="password">🔒 Password:</label>
-                        <input type="password" id="password" name="password" required placeholder="Masukkan password Anda" />
-                        <div class="error-message" id="passwordError"></div>
-                    </div>
-                </div>
-
-                <button type="submit" class="login-btn-wide">🚀 Login Sekarang</button>
-
-                <div class="register-link-container">
-                    <p class="register-link-text">Belum punya akun? 
-                    <a href="/register" class="register-link">📝 Daftar di sini</a>
-                    </p>
-                </div>
-            </form>
-
-            <!-- Info pengguna: untuk akses sebagai pengguna, silakan daftar terlebih dahulu. -->
-            <p class="text-center" >
-                <strong>Untuk akses sebagai pengguna, silakan daftar terlebih dahulu.</strong>
-            </p>
+        <div class="register-link-container">
+          <p class="register-link-text">
+            Belum punya akun?
+            <a href="/register" class="register-link">📝 Daftar di sini</a>
+          </p>
         </div>
+      </form>
+
+      <p class="text-center">
+        <strong>Untuk akses sebagai pengguna, silakan daftar terlebih dahulu.</strong>
+      </p>
     </div>
+  </div>
 
-    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
-    <script>
-        function showNotification(message, type = 'success') {
-            Toastify({
-                text: message,
-                duration: 3000,
-                close: true,
-                gravity: 'top',
-                position: 'right',
-                backgroundColor: type === 'success' 
-                    ? 'linear-gradient(135deg, #28a745, #20c997)'
-                    : 'linear-gradient(135deg, #dc3545, #e83e8c)',
-                stopOnFocus: true,
-            }).showToast();
-        }
+  <script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
 
-        // Login form handler
-        document.getElementById('loginForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
+  <script>
+    function showNotification(message, type = 'success') {
+      Toastify({
+        text: message,
+        duration: 3000,
+        close: true,
+        gravity: 'top',
+        position: 'right',
+        backgroundColor: type === 'success'
+          ? 'linear-gradient(135deg, #28a745, #20c997)'
+          : 'linear-gradient(135deg, #dc3545, #e83e8c)',
+      }).showToast();
+    }
 
-            const username = document.getElementById('username').value.trim();
-            const password = document.getElementById('password').value.trim();
+    // LOGIN HANDLER
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
 
-            // Reset error messages
-            document.getElementById('usernameError').style.display = 'none';
-            document.getElementById('passwordError').style.display = 'none';
+      const username = document.getElementById('username').value.trim();
+      const password = document.getElementById('password').value.trim();
 
-            // Basic validation
-            if (!username) {
-                document.getElementById('usernameError').textContent = 'Username tidak boleh kosong.';
-                document.getElementById('usernameError').style.display = 'block';
-                return;
-            }
-            if (!password) {
-                document.getElementById('passwordError').textContent = 'Password tidak boleh kosong.';
-                document.getElementById('passwordError').style.display = 'block';
-                return;
-            }
+      if (!username) {
+        document.getElementById('usernameError').textContent = 'Username tidak boleh kosong.';
+        document.getElementById('usernameError').style.display = 'block';
+        return;
+      }
+      if (!password) {
+        document.getElementById('passwordError').textContent = 'Password tidak boleh kosong.';
+        document.getElementById('passwordError').style.display = 'block';
+        return;
+      }
 
-            try {
-                console.log('Attempting login with:', { username, password });
-
-                const response = await fetch('/login', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    credentials: 'include',
-                    body: JSON.stringify({ 
-                        username: username,
-                        password: password 
-                    }),
-                });
-
-                console.log('Response status:', response.status);
-                
-                // Handle different status codes properly
-                if (response.status === 400) {
-                    const errorResult = await response.json();
-                    throw new Error(errorResult.message || 'Bad request');
-                }
-                
-                if (response.status === 401) {
-                    const errorResult = await response.json();
-                    throw new Error(errorResult.message || 'Unauthorized');
-                }
-
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-
-                const result = await response.json();
-                console.log('Login result:', result);
-
-                if (result.success) {
-                    // Simpan data ke localStorage dengan delay untuk memastikan tersimpan
-                    localStorage.setItem('isLoggedIn', 'true');
-                    localStorage.setItem('userRole', result.user.role);
-                    localStorage.setItem('userName', result.user.nama);
-                    localStorage.setItem('userId', result.user.id);
-                    
-                    console.log('Login successful, localStorage updated:', {
-                        isLoggedIn: localStorage.getItem('isLoggedIn'),
-                        userName: localStorage.getItem('userName'),
-                        userRole: localStorage.getItem('userRole')
-                    });
-                    
-                    showNotification('🎉 Login berhasil! Selamat datang ' + result.user.nama, 'success');
-                    
-                    // Success animation
-                    const submitButton = document.querySelector('.login-btn-wide');
-                    submitButton.textContent = '✅ Login Berhasil!';
-                    submitButton.style.background = 'linear-gradient(135deg, #28a745, #20c997)';
-                    submitButton.disabled = true;
-                    
-                    // Redirect ke home page setelah login berhasil
-                    setTimeout(() => {
-                        console.log('Redirecting to home page...');
-                        window.location.href = '/';
-                    }, 1500);
-                } else {
-                    const errorElement = document.getElementById('passwordError');
-                    errorElement.textContent = result.message || 'Login gagal';
-                    errorElement.style.display = 'block';
-                    showNotification('❌ ' + (result.message || 'Login gagal'), 'error');
-                }
-            } catch (error) {
-                console.error('Login error:', error);
-                const errorElement = document.getElementById('passwordError');
-                errorElement.textContent = 'Terjadi kesalahan saat login: ' + error.message;
-                errorElement.style.display = 'block';
-                showNotification('❌ Terjadi kesalahan saat login: ' + error.message, 'error');
-            }
+      try {
+        const response = await fetch('/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ username, password }),
         });
 
-        // Dark mode ditangani terpusat oleh app.js (attachModeToggle)
-        // Tidak perlu handler duplikat di halaman ini.
+        const result = await response.json();
+        console.log('Login result:', result);
 
-        // NAV: Saat belum login, tampilkan hanya About + Login/Daftar
-        function updateNav() {
-            const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
-            
-            console.log('=== LOGIN PAGE NAV UPDATE ===');
-            console.log('Login page - isLoggedIn:', isLoggedIn);
-            console.log('Login page - localStorage:', {
-                isLoggedIn: localStorage.getItem('isLoggedIn'),
-                userName: localStorage.getItem('userName'),
-                userRole: localStorage.getItem('userRole'),
-                userId: localStorage.getItem('userId')
-            });
-            
-            const navUsername = document.getElementById('nav-username');
-            const navLogout = document.getElementById('nav-logout');
-            const navLogin = document.getElementById('nav-login');
-            const navRegister = document.getElementById('nav-register');
-            const navItems = document.querySelectorAll('nav ul li');
+        if (response.ok && result.success) {
+          // Simpan status login
+          localStorage.setItem('isLoggedIn', 'true');
+          localStorage.setItem('userRole', result.user.role);
+          localStorage.setItem('userName', result.user.nama);
+          localStorage.setItem('userId', result.user.id);
 
-            // Reset tampil
-            navItems.forEach(item => item.style.display = 'flex');
+          showNotification('🎉 Login berhasil! Selamat datang ' + result.user.nama, 'success');
 
-            if (isLoggedIn) {
-                const userName = localStorage.getItem('userName');
-                const userRole = localStorage.getItem('userRole');
-                console.log('Login page - user is logged in, showing logged-in nav');
-                
-                if (navUsername) {
-                    navUsername.style.display = 'flex';
-                    navUsername.textContent = `👋 Halo, ${userName} (${userRole})`;
-                }
-                if (navLogout) navLogout.style.display = 'flex';
-                if (navLogin) navLogin.style.display = 'none';
-                if (navRegister) navRegister.style.display = 'none';
-                
-                // Jika user sudah login dan berada di halaman login, redirect ke home
-                console.log('Login page - user already logged in, redirecting to home...');
-                setTimeout(() => {
-                    console.log('Login page - executing redirect to home');
-                    window.location.href = '/';
-                }, 1000);
-            } else {
-                console.log('Login page - user is not logged in, showing guest nav');
-                // Sembunyikan Home/Dashboard/Catalog/LoanHistory
-                document.querySelectorAll('nav [data-page="home"], nav [data-page="dashboard"], nav [data-page="catalog"], nav [data-page="loan-history"]').forEach(el => el.style.display = 'none');
-                if (navUsername) navUsername.style.display = 'none';
-                if (navLogout) navLogout.style.display = 'none';
-                if (navLogin) navLogin.style.display = 'flex';
-                if (navRegister) navRegister.style.display = 'flex';
-            }
+          const btn = document.querySelector('.login-btn-wide');
+          btn.textContent = '✅ Login Berhasil!';
+          btn.style.background = 'linear-gradient(135deg, #28a745, #20c997)';
+          btn.disabled = true;
 
-            // Sembunyikan link halaman saat ini (Login) jika ada
-            const currentItem = document.querySelector('nav [href="/login"]')?.parentElement;
-            if (currentItem) currentItem.style.display = 'none';
-            
-            console.log('=== LOGIN PAGE NAV UPDATE COMPLETE ===');
+          // Redirect ke home
+          setTimeout(() => (window.location.href = '/'), 1200);
+        } else {
+          document.getElementById('passwordError').textContent =
+            result.message || 'Login gagal. Periksa kembali username dan password.';
+          document.getElementById('passwordError').style.display = 'block';
+          showNotification('❌ ' + (result.message || 'Login gagal'), 'error');
         }
+      } catch (err) {
+        console.error('Login error:', err);
+        showNotification('❌ Terjadi kesalahan saat login: ' + err.message, 'error');
+      }
+    });
 
-        async function handleLogout(event) {
-            event.preventDefault();
-            try {
-                const response = await fetch('/logout', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    credentials: 'include',
-                });
-                const result = await response.json();
-                if (result.success) {
-                    localStorage.clear();
-                    showNotification('👋 Anda telah berhasil logout.', 'success');
-                    // // window.location.href = '/login'; // Disabled for testing // Disabled for testing
-                } else {
-                    showNotification('❌ Gagal logout: ' + result.message, 'error');
-                }
-            } catch (error) {
-                console.error('Error during logout:', error);
-                showNotification('❌ Terjadi kesalahan saat logout.', 'error');
-            }
-        }
-
-        document.addEventListener('DOMContentLoaded', () => {
-            console.log('=== LOGIN PAGE DOM LOADED ===');
-            console.log('Login page - localStorage check:', {
-                isLoggedIn: localStorage.getItem('isLoggedIn'),
-                userName: localStorage.getItem('userName'),
-                userRole: localStorage.getItem('userRole'),
-                userId: localStorage.getItem('userId')
-            });
-            
-            updateNav();
-
-            const logoutLink = document.getElementById('logout-link');
-            if (logoutLink) {
-                logoutLink.addEventListener('click', handleLogout);
-            }
-
-            // Animation for input focus
-            const inputs = document.querySelectorAll('input');
-            inputs.forEach(input => {
-                input.addEventListener('focus', function() {
-                    this.parentElement.classList.add('focused');
-                });
-                input.addEventListener('blur', function() {
-                    if (!this.value) {
-                        this.parentElement.classList.remove('focused');
-                    }
-                });
-            });
-
-            // Auto-focus on username field
-            document.getElementById('username').focus();
-
-            // Enter key for form submission
-            document.addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') {
-                    document.getElementById('loginForm').dispatchEvent(new Event('submit'));
-                }
-            });
-
-            console.log('=== LOGIN PAGE DOM LOADED COMPLETE ===');
+    // LOGOUT
+    async function handleLogout(e) {
+      e.preventDefault();
+      try {
+        const response = await fetch('/logout', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
         });
-    </script>
-    <script src="js/app.js?v=20241220"></script>
+        const result = await response.json();
+        if (result.success) {
+          localStorage.clear();
+          showNotification('👋 Anda telah logout.', 'success');
+          setTimeout(() => (window.location.href = '/login'), 1000);
+        }
+      } catch (error) {
+        console.error('Logout error:', error);
+        showNotification('❌ Gagal logout', 'error');
+      }
+    }
+
+    // UPDATE NAV SESUAI STATUS LOGIN
+    function updateNav() {
+      const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
+      const userName = localStorage.getItem('userName');
+      const userRole = localStorage.getItem('userRole');
+
+      const navUsername = document.getElementById('nav-username');
+      const navLogout = document.getElementById('nav-logout');
+      const navLogin = document.getElementById('nav-login');
+      const navRegister = document.getElementById('nav-register');
+
+      if (isLoggedIn) {
+        if (navUsername) {
+          navUsername.textContent = `👋 Halo, ${userName} (${userRole})`;
+          navUsername.style.display = 'flex';
+        }
+        if (navLogout) navLogout.style.display = 'flex';
+        if (navLogin) navLogin.style.display = 'none';
+        if (navRegister) navRegister.style.display = 'none';
+
+        // Kalau udah login dan buka /login, langsung ke home
+        setTimeout(() => (window.location.href = '/'), 800);
+      } else {
+        if (navUsername) navUsername.style.display = 'none';
+        if (navLogout) navLogout.style.display = 'none';
+        if (navLogin) navLogin.style.display = 'flex';
+        if (navRegister) navRegister.style.display = 'flex';
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      updateNav();
+      document.getElementById('logout-link')?.addEventListener('click', handleLogout);
+    });
+  </script>
+
+  <!-- Script utama -->
+  <script src="/app.js"></script>
 </body>
 </html>
