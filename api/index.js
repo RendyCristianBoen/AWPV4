@@ -51,8 +51,9 @@ app.use(cors({
 
 app.use(express.json());
 
-// ✅ FIX: Correct static file path for Vercel - SERVE ALL STATIC FILES
-app.use(express.static(path.join(__dirname, '..', 'public')));
+// ✅ FIX: Correct static file path for Vercel
+const publicPath = path.join(__dirname, '..', 'public');
+app.use(express.static(publicPath));
 
 // ✅ FIX: Session configuration for Vercel
 app.use(session({
@@ -86,8 +87,14 @@ app.use(async (req, res, next) => {
     }
 });
 
-// Authentication middleware
+// ✅ FIX: Authentication middleware - ALLOW HTML ACCESS WITHOUT LOGIN
 function requireAuth(req, res, next) {
+    // Allow access to HTML files without authentication
+    if (req.path.endsWith('.html') || req.path === '/') {
+        return next();
+    }
+    
+    // Require authentication only for API routes
     if (req.session && req.session.userId) {
         return next();
     } else {
@@ -106,10 +113,11 @@ function requireAdminOrPetugas(req, res, next) {
     res.status(403).json({ success: false, message: 'Akses ditolak. Hanya admin atau petugas yang dapat mengakses fitur ini.' });
 }
 
-// ✅ FIX: Correct HTML file paths
-const publicPath = path.join(__dirname, '..', 'public');
+// ✅ FIX: Serve HTML files - NO AUTH REQUIRED
+app.get('/', (req, res) => {
+    res.sendFile(path.join(publicPath, 'Index.html'));
+});
 
-// Public routes - FIXED PATHS
 app.get('/login', (req, res) => {
     res.sendFile(path.join(publicPath, 'Login.html'));
 });
@@ -120,10 +128,6 @@ app.get('/register', (req, res) => {
 
 app.get('/about', (req, res) => {
     res.sendFile(path.join(publicPath, 'About.html'));
-});
-
-app.get('/', (req, res) => {
-    res.sendFile(path.join(publicPath, 'Index.html'));
 });
 
 app.get('/Catalog.html', (req, res) => {
@@ -138,7 +142,7 @@ app.get('/Dashboard.html', (req, res) => {
     res.sendFile(path.join(publicPath, 'Dashboard.html'));
 });
 
-// ✅ FIX: Serve CSS files explicitly
+// ✅ FIX: Serve static files explicitly
 app.get('/css/*', (req, res) => {
     const cssPath = path.join(publicPath, 'css', req.params[0]);
     if (fs.existsSync(cssPath)) {
@@ -148,7 +152,6 @@ app.get('/css/*', (req, res) => {
     }
 });
 
-// ✅ FIX: Serve JS files explicitly
 app.get('/js/*', (req, res) => {
     const jsPath = path.join(publicPath, 'js', req.params[0]);
     if (fs.existsSync(jsPath)) {
@@ -158,7 +161,6 @@ app.get('/js/*', (req, res) => {
     }
 });
 
-// ✅ FIX: Serve images
 app.get('/images/*', (req, res) => {
     const imagePath = path.join(publicPath, 'images', req.params[0]);
     if (fs.existsSync(imagePath)) {
@@ -168,7 +170,7 @@ app.get('/images/*', (req, res) => {
     }
 });
 
-// Authentication routes
+// Authentication routes - NO AUTH REQUIRED
 app.post('/login', async (req, res) => {
     try {
         console.log('Login attempt:', req.body.username);
@@ -305,7 +307,7 @@ app.post('/logout', (req, res) => {
     });
 });
 
-// CHECK SESSION ENDPOINT
+// CHECK SESSION ENDPOINT - NO AUTH REQUIRED
 app.get('/check-session', (req, res) => {
     if (req.session && req.session.userId) {
         res.json({
@@ -323,7 +325,7 @@ app.get('/check-session', (req, res) => {
     }
 });
 
-// API Routes
+// ✅ FIX: API Routes - REQUIRE AUTH
 app.get('/data', requireAuth, async (req, res) => {
     try {
         const [books] = await pool.execute('SELECT * FROM books');
@@ -766,7 +768,7 @@ app.post('/return-book/:id', requireAuth, async (req, res) => {
     }
 });
 
-// Health check
+// Health check - NO AUTH REQUIRED
 app.get('/health', async (req, res) => {
     try {
         const [result] = await pool.execute('SELECT 1 as test');
