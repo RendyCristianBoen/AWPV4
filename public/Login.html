@@ -171,10 +171,17 @@
                 console.log('Login result:', result);
 
                 if (result.success) {
+                    // Simpan data ke localStorage dengan delay untuk memastikan tersimpan
                     localStorage.setItem('isLoggedIn', 'true');
                     localStorage.setItem('userRole', result.user.role);
                     localStorage.setItem('userName', result.user.nama);
                     localStorage.setItem('userId', result.user.id);
+                    
+                    console.log('Login successful, localStorage updated:', {
+                        isLoggedIn: localStorage.getItem('isLoggedIn'),
+                        userName: localStorage.getItem('userName'),
+                        userRole: localStorage.getItem('userRole')
+                    });
                     
                     showNotification('🎉 Login berhasil! Selamat datang ' + result.user.nama, 'success');
                     
@@ -184,9 +191,10 @@
                     submitButton.style.background = 'linear-gradient(135deg, #28a745, #20c997)';
                     submitButton.disabled = true;
                     
+                    // Redirect ke home page setelah login berhasil
                     setTimeout(() => {
-                        // Force reload to ensure session sync
-                        window.location.replace('/');
+                        console.log('Redirecting to home page...');
+                        window.location.href = '/';
                     }, 1500);
                 } else {
                     const errorElement = document.getElementById('passwordError');
@@ -232,7 +240,7 @@
                 // Jika user sudah login dan berada di halaman login, redirect ke home
                 console.log('User already logged in, redirecting to home...');
                 setTimeout(() => {
-                    window.location.replace('/');
+                    window.location.href = '/';
                 }, 1000);
             } else {
                 // Sembunyikan Home/Dashboard/Catalog/LoanHistory

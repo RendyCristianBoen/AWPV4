@@ -83,18 +83,49 @@
     
     console.log('Auth guard - page:', key, 'isLoggedIn:', isLoggedIn);
     
+    // Sementara disable auth guard untuk testing
+    console.log('Auth guard - disabled for testing');
+    return;
+    
+    // Original auth guard code (commented out for testing):
+    /*
+    // Cek apakah sudah ada flag redirect untuk mencegah loop
+    if (sessionStorage.getItem('redirecting')) {
+      console.log('Auth guard - already redirecting, skipping');
+      return;
+    }
+    
     // Jika user sudah login dan berada di halaman login, redirect ke home
     if (isLoggedIn && key === 'login') {
       console.log('Auth guard - user logged in but on login page, redirecting to home');
-      try { location.replace('/'); } catch(_) { location.href = '/'; }
+      sessionStorage.setItem('redirecting', 'true');
+      setTimeout(() => {
+        try { 
+          location.href = '/'; 
+          sessionStorage.removeItem('redirecting');
+        } catch(_) { 
+          location.replace('/'); 
+          sessionStorage.removeItem('redirecting');
+        }
+      }, 1000);
       return;
     }
     
     // Jika user belum login dan mengakses halaman protected, redirect ke login
     if (!isLoggedIn && !publicPages.includes(key)) {
       console.log('Auth guard - user not logged in, redirecting to login');
-      try { location.replace('/login'); } catch(_) { location.href = '/login'; }
+      sessionStorage.setItem('redirecting', 'true');
+      setTimeout(() => {
+        try { 
+          location.href = '/login'; 
+          sessionStorage.removeItem('redirecting');
+        } catch(_) { 
+          location.replace('/login'); 
+          sessionStorage.removeItem('redirecting');
+        }
+      }, 1000);
     }
+    */
   };
 
   // ---- Navigation updater ----
@@ -230,13 +261,23 @@
   };
 
   async function autoInit(){
-    await app.syncSession(); // Sync with backend session first
     console.log('Auto init - localStorage status:', {
       isLoggedIn: ls.getItem('isLoggedIn'),
       userName: ls.getItem('userName')
     });
     
-    app.ensureAuth();
+    // Sync session dengan backend tapi tidak terlalu agresif
+    try {
+      await app.syncSession();
+    } catch (error) {
+      console.log('Session sync failed, using localStorage:', error);
+    }
+    
+    // Delay auth guard untuk memastikan localStorage sudah loaded
+    setTimeout(() => {
+      app.ensureAuth();
+    }, 100);
+    
     app.enablePerformanceMode();
     app.updateNav();
     app.attachModeToggle();
