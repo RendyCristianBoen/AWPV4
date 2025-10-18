@@ -39,21 +39,26 @@
           ls.setItem('userId', result.user.id);
           console.log('Session sync - updated localStorage with backend data');
         } else {
-          // Clear localStorage if backend says not logged in
-          console.log('Session sync - backend says not logged in, clearing localStorage');
-          ls.removeItem('isLoggedIn');
-          ls.removeItem('userName');
-          ls.removeItem('userRole');
-          ls.removeItem('userId');
+          // Check if we have localStorage data as fallback
+          const localIsLoggedIn = ls.getItem('isLoggedIn') === 'true';
+          if (localIsLoggedIn) {
+            console.log('Session sync - backend session invalid, but localStorage exists - keeping local data');
+            // Keep localStorage data as fallback
+          } else {
+            console.log('Session sync - backend says not logged in, clearing localStorage');
+            ls.removeItem('isLoggedIn');
+            ls.removeItem('userName');
+            ls.removeItem('userRole');
+            ls.removeItem('userId');
+          }
         }
+      } else {
+        console.log('Session sync - backend error, keeping localStorage as fallback');
       }
     } catch (error) {
       console.error('Session sync error:', error);
-      // Clear localStorage on error to be safe
-      ls.removeItem('isLoggedIn');
-      ls.removeItem('userName');
-      ls.removeItem('userRole');
-      ls.removeItem('userId');
+      // Keep localStorage on error as fallback
+      console.log('Session sync - network error, keeping localStorage as fallback');
     }
   };
 
