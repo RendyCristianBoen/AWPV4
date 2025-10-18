@@ -62,7 +62,3 @@ npm start
 ## 🌐 Production URL
 Setelah deploy, aplikasi akan tersedia di:
 `https://your-project-name.vercel.app`
-<<<<<<< HEAD
-=======
-
->>>>>>> e7722ad (first commit)

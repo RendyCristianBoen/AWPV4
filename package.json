@@ -11,12 +11,9 @@
     "build": "echo 'No build step required'",
     "vercel-build": "echo 'No build step required'"
   },
-<<<<<<< HEAD
-=======
   "engines": {
     "node": ">=18.0.0"
   },
->>>>>>> e7722ad (first commit)
   "dependencies": {
     "mysql2": "^3.15.2",
     "bcrypt": "^5.1.1",

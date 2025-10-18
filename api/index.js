@@ -1,17 +1,10 @@
-<<<<<<< HEAD
-// Vercel serverless function entry point
-=======
 // Vercel serverless function - Sistem Perpustakaan
->>>>>>> e7722ad (first commit)
 const express = require('express');
 const session = require('express-session');
 const cors = require('cors');
 const fs = require('fs');
 const path = require('path');
 const bcrypt = require('bcrypt');
-<<<<<<< HEAD
-const { pool, initializeDatabase } = require('../database');
-=======
 const mysql = require('mysql2/promise');
 
 // Database configuration
@@ -41,7 +34,6 @@ async function initDatabase() {
     }
     return pool;
 }
->>>>>>> e7722ad (first commit)
 
 // Initialize Express app
 const app = express();
@@ -53,18 +45,11 @@ app.use(cors({
         'http://localhost:3000',
     credentials: true
 }));
-<<<<<<< HEAD
-app.use(express.json());
-app.use(express.static(path.join(__dirname, '../public')));
-
-// Session configuration for Vercel
-=======
 
 app.use(express.json());
 app.use(express.static(path.join(__dirname, '../public')));
 
 // Session configuration
->>>>>>> e7722ad (first commit)
 app.use(session({
     secret: process.env.SESSION_SECRET || 'perpustakaan-secret-key-2024',
     resave: false,
@@ -72,12 +57,6 @@ app.use(session({
     cookie: {
         secure: process.env.NODE_ENV === 'production',
         httpOnly: true,
-<<<<<<< HEAD
-        maxAge: 24 * 60 * 60 * 1000 // 24 hours
-    }
-}));
-
-=======
         maxAge: 24 * 60 * 60 * 1000
     }
 }));
@@ -93,7 +72,6 @@ app.use(async (req, res, next) => {
     }
 });
 
->>>>>>> e7722ad (first commit)
 // Authentication middleware
 function requireAuth(req, res, next) {
     if (req.session && req.session.userId) {
@@ -110,11 +88,7 @@ function requireAdminOrPetugas(req, res, next) {
     res.status(403).json({ success: false, message: 'Akses ditolak. Hanya admin atau petugas yang dapat mengakses fitur ini.' });
 }
 
-<<<<<<< HEAD
-// Public routes (no auth required)
-=======
 // Public routes
->>>>>>> e7722ad (first commit)
 app.get('/login', (req, res) => {
     res.sendFile(path.join(__dirname, '../public', 'Login.html'));
 });
@@ -255,11 +229,7 @@ app.post('/logout', (req, res) => {
     });
 });
 
-<<<<<<< HEAD
-// Protected routes - require authentication
-=======
 // Protected routes
->>>>>>> e7722ad (first commit)
 app.get('/', (req, res) => {
     if (!req.session || !req.session.userId) {
         return res.redirect('/login');
@@ -288,11 +258,7 @@ app.get('/Dashboard.html', (req, res) => {
     res.sendFile(path.join(__dirname, '../public', 'Dashboard.html'));
 });
 
-<<<<<<< HEAD
-// Books data endpoint
-=======
 // API Routes
->>>>>>> e7722ad (first commit)
 app.get('/data', requireAuth, async (req, res) => {
     try {
         const [books] = await pool.execute('SELECT * FROM books');
@@ -303,10 +269,6 @@ app.get('/data', requireAuth, async (req, res) => {
     }
 });
 
-<<<<<<< HEAD
-// Dashboard Analytics
-=======
->>>>>>> e7722ad (first commit)
 app.get('/dashboard-stats', requireAuth, async (req, res) => {
     try {
         const [totalBooks] = await pool.execute('SELECT COUNT(*) as total FROM books');
@@ -315,33 +277,6 @@ app.get('/dashboard-stats', requireAuth, async (req, res) => {
         const [totalLoans] = await pool.execute('SELECT COUNT(*) as total FROM loan_history');
         const [topRatedBook] = await pool.execute('SELECT judul, rating FROM books ORDER BY rating DESC LIMIT 1');
         
-<<<<<<< HEAD
-        const [genreStats] = await pool.execute(`
-            SELECT genre, COUNT(*) as count 
-            FROM books 
-            GROUP BY genre 
-            ORDER BY count DESC
-        `);
-        
-        const [monthlyStats] = await pool.execute(`
-            SELECT DATE_FORMAT(tanggal_pinjam, '%Y-%m') as month, COUNT(*) as count 
-            FROM loan_history 
-            GROUP BY month 
-            ORDER BY month DESC 
-            LIMIT 6
-        `);
-
-        const [popularBooks] = await pool.execute(`
-            SELECT b.*, COUNT(lh.id) as loan_count
-            FROM books b 
-            LEFT JOIN loan_history lh ON b.id = lh.book_id 
-            GROUP BY b.id 
-            ORDER BY loan_count DESC 
-            LIMIT 5
-        `);
-
-=======
->>>>>>> e7722ad (first commit)
         res.json({
             success: true,
             stats: {
@@ -349,14 +284,7 @@ app.get('/dashboard-stats', requireAuth, async (req, res) => {
                 totalUsers: totalUsers[0].total,
                 activeLoans: activeLoans[0].total,
                 totalLoans: totalLoans[0].total,
-<<<<<<< HEAD
-                topRatedBook: topRatedBook[0] || { judul: 'Tidak ada', rating: 0 },
-                genreDistribution: genreStats,
-                monthlyTrends: monthlyStats,
-                popularBooks: popularBooks
-=======
                 topRatedBook: topRatedBook[0] || { judul: 'Tidak ada', rating: 0 }
->>>>>>> e7722ad (first commit)
             }
         });
     } catch (error) {
@@ -365,10 +293,6 @@ app.get('/dashboard-stats', requireAuth, async (req, res) => {
     }
 });
 
-<<<<<<< HEAD
-// Advanced Search
-=======
->>>>>>> e7722ad (first commit)
 app.get('/search', requireAuth, async (req, res) => {
     try {
         const { q: query, genre, minRating, year, author } = req.query;
@@ -418,10 +342,6 @@ app.get('/search', requireAuth, async (req, res) => {
     }
 });
 
-<<<<<<< HEAD
-// Book Recommendations
-=======
->>>>>>> e7722ad (first commit)
 app.get('/recommendations', requireAuth, async (req, res) => {
     try {
         const { bookId, genre } = req.query;
@@ -464,10 +384,6 @@ app.get('/recommendations', requireAuth, async (req, res) => {
     }
 });
 
-<<<<<<< HEAD
-// Popular Books
-=======
->>>>>>> e7722ad (first commit)
 app.get('/popular-books', requireAuth, async (req, res) => {
     try {
         const [popularBooks] = await pool.execute(`
@@ -486,10 +402,6 @@ app.get('/popular-books', requireAuth, async (req, res) => {
     }
 });
 
-<<<<<<< HEAD
-// User Reading History
-=======
->>>>>>> e7722ad (first commit)
 app.get('/reading-history', requireAuth, async (req, res) => {
     try {
         const [readingHistory] = await pool.execute(`
@@ -508,10 +420,6 @@ app.get('/reading-history', requireAuth, async (req, res) => {
     }
 });
 
-<<<<<<< HEAD
-// Get loan history
-=======
->>>>>>> e7722ad (first commit)
 app.get('/loan-history', requireAuth, async (req, res) => {
     try {
         let query = `
@@ -539,10 +447,6 @@ app.get('/loan-history', requireAuth, async (req, res) => {
     }
 });
 
-<<<<<<< HEAD
-// Get single book by ID
-=======
->>>>>>> e7722ad (first commit)
 app.get('/book/:id', requireAuth, async (req, res) => {
     try {
         const bookId = parseInt(req.params.id);
@@ -558,11 +462,7 @@ app.get('/book/:id', requireAuth, async (req, res) => {
     }
 });
 
-<<<<<<< HEAD
-// Add new book (Admin/Petugas only)
-=======
 // Book CRUD routes
->>>>>>> e7722ad (first commit)
 app.post('/book', requireAdminOrPetugas, async (req, res) => {
     try {
         const { judul, tahunRilis, penulis, penerbit, genre, gambar, deskripsi, isbn, rating } = req.body;
@@ -609,10 +509,6 @@ app.post('/book', requireAdminOrPetugas, async (req, res) => {
     }
 });
 
-<<<<<<< HEAD
-// Update book (Admin/Petugas only)
-=======
->>>>>>> e7722ad (first commit)
 app.put('/book/:id', requireAdminOrPetugas, async (req, res) => {
     try {
         const bookId = parseInt(req.params.id);
@@ -651,10 +547,6 @@ app.put('/book/:id', requireAdminOrPetugas, async (req, res) => {
     }
 });
 
-<<<<<<< HEAD
-// Delete book (Admin/Petugas only)
-=======
->>>>>>> e7722ad (first commit)
 app.delete('/book/:id', requireAdminOrPetugas, async (req, res) => {
     try {
         const bookId = parseInt(req.params.id);
@@ -671,11 +563,7 @@ app.delete('/book/:id', requireAdminOrPetugas, async (req, res) => {
     }
 });
 
-<<<<<<< HEAD
-// Change book status (borrow/return)
-=======
 // Book status change
->>>>>>> e7722ad (first commit)
 app.post('/book/status/:id', requireAuth, async (req, res) => {
     try {
         const bookId = parseInt(req.params.id);
@@ -813,96 +701,13 @@ app.post('/return-book/:id', requireAuth, async (req, res) => {
     }
 });
 
-<<<<<<< HEAD
-// Export CSV loan history
-app.get('/export-loan-history', requireAuth, async (req, res) => {
-    try {
-        const { status, sort = 'tanggal_pinjam', order = 'desc' } = req.query;
-        const sortMap = {
-            judul: 'b.judul',
-            penulis: 'b.penulis',
-            peminjam: 'u.nama',
-            tanggal_pinjam: 'lh.tanggal_pinjam',
-            batas_pengembalian: 'lh.batas_pengembalian',
-            tanggal_kembali: 'lh.tanggal_kembali',
-            durasi_hari: 'lh.durasi_hari',
-            status: 'lh.status',
-            denda: 'lh.denda'
-        };
-        const orderBy = sortMap[sort] || 'lh.tanggal_pinjam';
-        const orderDirection = order.toLowerCase() === 'asc' ? 'ASC' : 'DESC';
-
-        let baseSql = `
-            FROM loan_history lh 
-            JOIN books b ON lh.book_id = b.id 
-            JOIN users u ON lh.user_id = u.id
-        `;
-        const where = [];
-        const params = [];
-        if (req.session.role === 'pengguna') {
-            where.push('lh.user_id = ?');
-            params.push(req.session.userId);
-        }
-        if (status) {
-            if (status === 'Terlambat') {
-                where.push("((lh.status = 'Dipinjam' AND lh.batas_pengembalian < NOW()) OR lh.status = 'Terlambat'))");
-            } else {
-                where.push('lh.status = ?');
-                params.push(status);
-            }
-        }
-        const whereSql = where.length ? ' WHERE ' + where.join(' AND ') : '';
-
-        const [rows] = await pool.execute(
-            `SELECT lh.*, b.judul, b.penulis, b.gambar, u.nama as nama_peminjam ${baseSql} ${whereSql} ORDER BY ${orderBy} ${orderDirection}`,
-            params
-        );
-
-        const header = ['Judul','Penulis','Peminjam','TanggalPinjam','BatasKembali','TanggalKembali','Durasi(hari)','Status','Denda'];
-        const csvLines = [header.join(',')];
-        for (const r of rows) {
-            const statusDisplay = r.status;
-            const vals = [
-                r.judul, r.penulis, r.nama_peminjam,
-                r.tanggal_pinjam ? new Date(r.tanggal_pinjam).toISOString() : '',
-                r.batas_pengembalian ? new Date(r.batas_pengembalian).toISOString() : '',
-                r.tanggal_kembali ? new Date(r.tanggal_kembali).toISOString() : '',
-                r.durasi_hari || 0,
-                statusDisplay,
-                r.denda || 0
-            ].map(v => '"' + String(v).replace(/"/g,'""') + '"');
-            csvLines.push(vals.join(','));
-        }
-        const csv = csvLines.join('\n');
-        res.set({
-            'Content-Type': 'text/csv; charset=utf-8',
-            'Content-Disposition': 'attachment; filename="loan-history.csv"'
-        });
-        res.send(csv);
-    } catch (err) {
-        console.error('Error exporting CSV:', err);
-        res.status(500).json({ success: false, message: 'Gagal mengekspor CSV.' });
-    }
-});
-
-=======
->>>>>>> e7722ad (first commit)
 // Serve images
 app.get('/images/*', (req, res) => {
     const imagePath = path.join(__dirname, '../public', 'images', req.params[0]);
     if (fs.existsSync(imagePath)) {
         res.sendFile(imagePath);
     } else {
-<<<<<<< HEAD
-        const placeholderPath = path.join(__dirname, '../public', 'images', 'default-book.jpg');
-        if (fs.existsSync(placeholderPath)) {
-            res.sendFile(placeholderPath);
-        } else {
-            res.status(404).send('Image not found');
-        }
-=======
         res.status(404).send('Image not found');
->>>>>>> e7722ad (first commit)
     }
 });
 
@@ -914,18 +719,5 @@ app.use((req, res) => {
     res.status(404).send('404 Not Found');
 });
 
-<<<<<<< HEAD
-// Initialize database and export app
-module.exports = async (req, res) => {
-    try {
-        await initializeDatabase();
-        return app(req, res);
-    } catch (error) {
-        console.error('Database initialization error:', error);
-        res.status(500).json({ success: false, message: 'Database connection failed' });
-    }
-};
-=======
 // Export app for Vercel
 module.exports = app;
->>>>>>> e7722ad (first commit)
