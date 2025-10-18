@@ -274,7 +274,7 @@ app.get('/check-session', (req, res) => {
 
 // HOME ROUTE
 app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, '../public/Index.html'));
+    res.sendFile(path.join(__dirname, '../public/index.html'));
 });
 
 app.get('/Catalog.html', (req, res) => {
