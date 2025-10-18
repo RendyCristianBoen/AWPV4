@@ -228,6 +228,12 @@
                 if (navLogout) navLogout.style.display = 'flex';
                 if (navLogin) navLogin.style.display = 'none';
                 if (navRegister) navRegister.style.display = 'none';
+                
+                // Jika user sudah login dan berada di halaman login, redirect ke home
+                console.log('User already logged in, redirecting to home...');
+                setTimeout(() => {
+                    window.location.replace('/');
+                }, 1000);
             } else {
                 // Sembunyikan Home/Dashboard/Catalog/LoanHistory
                 document.querySelectorAll('nav [data-page="home"], nav [data-page="dashboard"], nav [data-page="catalog"], nav [data-page="loan-history"]').forEach(el => el.style.display = 'none');

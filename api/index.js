@@ -316,18 +316,10 @@ app.get('/', (req, res) => {
     console.log('Home route - session ID:', req.sessionID);
     console.log('Home route - cookies:', req.headers.cookie);
     
-    // Check both session and localStorage fallback
-    const hasValidSession = req.session && req.session.userId;
-    
-    if (!hasValidSession) {
-        console.log('Home route - no valid session, checking for localStorage fallback');
-        // For now, allow access and let frontend handle auth
-        console.log('Home route - serving Index.html (letting frontend handle auth)');
-        res.sendFile(path.join(__dirname, '../public', 'Index.html'));
-    } else {
-        console.log('Home route - serving Index.html (session valid)');
-        res.sendFile(path.join(__dirname, '../public', 'Index.html'));
-    }
+    // Always serve the page and let frontend handle auth
+    // This prevents redirect loops
+    console.log('Home route - serving Index.html (frontend handles auth)');
+    res.sendFile(path.join(__dirname, '../public', 'Index.html'));
 });
 
 app.get('/Catalog.html', (req, res) => {
@@ -803,9 +795,8 @@ app.get('/images/*', (req, res) => {
 
 // 404 handler
 app.use((req, res) => {
-    if (!req.session || !req.session.userId) {
-        return res.redirect('/login');
-    }
+    console.log('404 handler - req.session:', req.session);
+    // Let frontend handle auth, just return 404
     res.status(404).send('404 Not Found');
 });
 

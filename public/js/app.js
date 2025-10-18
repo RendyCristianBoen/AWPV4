@@ -79,11 +79,20 @@
   app.ensureAuth = function(){
     const key = getPageKey();
     const publicPages = ['about','login','register'];
+    const isLoggedIn = app.isLoggedIn();
     
-    console.log('Auth guard - page:', key, 'isLoggedIn:', app.isLoggedIn());
+    console.log('Auth guard - page:', key, 'isLoggedIn:', isLoggedIn);
     
-    if (!app.isLoggedIn() && !publicPages.includes(key)) {
-      // Halaman dilindungi, redirect ke login
+    // Jika user sudah login dan berada di halaman login, redirect ke home
+    if (isLoggedIn && key === 'login') {
+      console.log('Auth guard - user logged in but on login page, redirecting to home');
+      try { location.replace('/'); } catch(_) { location.href = '/'; }
+      return;
+    }
+    
+    // Jika user belum login dan mengakses halaman protected, redirect ke login
+    if (!isLoggedIn && !publicPages.includes(key)) {
+      console.log('Auth guard - user not logged in, redirecting to login');
       try { location.replace('/login'); } catch(_) { location.href = '/login'; }
     }
   };
@@ -93,6 +102,9 @@
     const isLogged = app.isLoggedIn();
     const user = app.getUser();
     const key = getPageKey();
+    
+    console.log('updateNav - isLogged:', isLogged, 'user:', user, 'page:', key);
+    
     // Set body auth class for CSS-based fallbacks
     try {
       document.body.classList.toggle('auth-yes', !!isLogged);
@@ -115,6 +127,7 @@
     });
 
     if (isLogged) {
+      // User sudah login: tampilkan menu yang sesuai
       if (loginEl) loginEl.style.display = 'none';
       if (registerEl) registerEl.style.display = 'none';
       if (userEl) {
@@ -122,6 +135,9 @@
         userEl.textContent = user.name ? `👋 Halo, ${user.name} (${user.role})` : '';
       }
       if (logoutEl) logoutEl.style.display = 'flex';
+      
+      // Tampilkan menu yang bisa diakses user yang sudah login
+      nav.querySelectorAll(hideSelector).forEach(el => el.style.display = 'flex');
     } else {
       // Belum login: sembunyikan menu yang butuh auth
       nav.querySelectorAll(hideSelector).forEach(el => el.style.display = 'none');
