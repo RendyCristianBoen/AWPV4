@@ -38,37 +38,48 @@ async function initDatabase() {
 // Initialize Express app
 const app = express();
 
+// ✅ FIX: Trust proxy for Vercel
+app.set('trust proxy', 1);
+
 // Middleware setup
 app.use(cors({
-    origin: true, // Allow all origins for now
+    origin: process.env.NODE_ENV === 'production' 
+        ? true 
+        : ['http://localhost:3000', 'http://localhost:3001'],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'Cookie']
+    allowedHeaders: ['Content-Type', 'Authorization', 'Cookie', 'X-Requested-With']
 }));
 
 app.use(express.json());
-app.use(express.static(path.join(__dirname, 'public'))); // ✅ FIX: hapus ../
+app.use(express.static(path.join(__dirname, 'public')));
 
-// ✅ FIX: pindah session middleware di atas semua route, dan buat secure dinamis
+// ✅ FIX: Session configuration for Vercel
 app.use(session({
     secret: process.env.SESSION_SECRET || 'perpustakaan-secret-key-2024-very-long-secret',
     resave: false,
     saveUninitialized: false,
+    proxy: true, // ✅ Important for Vercel
     cookie: {
-        secure: process.env.NODE_ENV === 'production', // ✅ true kalau di Vercel (HTTPS)
+        secure: process.env.NODE_ENV === 'production', // ✅ true in Vercel
         httpOnly: true,
-        sameSite: 'lax',
-        path: '/',
-        maxAge: 24 * 60 * 60 * 1000 // 24 jam
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // ✅ Important for cross-origin
+        maxAge: 24 * 60 * 60 * 1000, // 24 jam
+        domain: process.env.NODE_ENV === 'production' ? '.vercel.app' : undefined // ✅ For Vercel deployment
     },
-    name: 'perpustakaan.sid'
+    name: 'perpustakaan.sid',
+    rolling: true // ✅ Reset maxAge on every request
 }));
 
-// Session debugging middleware
+// Enhanced session debugging middleware
 app.use((req, res, next) => {
-    console.log('Session middleware - req.session:', req.session);
-    console.log('Session middleware - session ID:', req.sessionID);
-    console.log('Session middleware - cookies:', req.headers.cookie);
+    console.log('=== SESSION DEBUG ===');
+    console.log('Session ID:', req.sessionID);
+    console.log('Session data:', req.session);
+    console.log('Cookies:', req.headers.cookie);
+    console.log('User-Agent:', req.headers['user-agent']);
+    console.log('Origin:', req.headers.origin);
+    console.log('=====================');
     next();
 });
 
@@ -85,12 +96,23 @@ app.use(async (req, res, next) => {
 
 // Authentication middleware - modified for testing
 function requireAuth(req, res, next) {
-    console.log('requireAuth - req.session:', req.session);
-    console.log('requireAuth - session ID:', req.sessionID);
+    console.log('=== REQUIRE AUTH CHECK ===');
+    console.log('Session ID:', req.sessionID);
+    console.log('Session data:', req.session);
+    console.log('User ID in session:', req.session?.userId);
     
-    // For now, allow all requests and let frontend handle auth
-    console.log('requireAuth - bypassing session check for testing');
-    return next();
+    if (req.session && req.session.userId) {
+        console.log('✅ Auth check passed');
+        return next();
+    } else {
+        console.log('❌ Auth check failed - no valid session');
+        // Return 401 instead of 403 for authentication issues
+        return res.status(401).json({ 
+            success: false, 
+            message: 'Silakan login terlebih dahulu',
+            requiresLogin: true
+        });
+    }
 }
 
 // Admin/Petugas middleware
@@ -103,15 +125,15 @@ function requireAdminOrPetugas(req, res, next) {
 
 // Public routes
 app.get('/login', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'Login.html')); // ✅ FIX: hapus ../
+    res.sendFile(path.join(__dirname, 'public', 'Login.html'));
 });
 
 app.get('/register', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'Register.html')); // ✅ FIX: hapus ../
+    res.sendFile(path.join(__dirname, 'public', 'Register.html'));
 });
 
 app.get('/about', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'About.html')); // ✅ FIX: hapus ../
+    res.sendFile(path.join(__dirname, 'public', 'About.html'));
 });
 
 // Authentication routes
@@ -121,7 +143,6 @@ app.post('/login', async (req, res) => {
         console.log('Login request body:', req.body);
         console.log('Login session before:', req.session);
         console.log('Login session ID:', req.sessionID);
-        console.log('Login cookies:', req.headers.cookie);
         
         const { username, password } = req.body;
 
@@ -139,30 +160,41 @@ app.post('/login', async (req, res) => {
             const isValidPassword = await bcrypt.compare(password, user.password);
             
             if (isValidPassword) {
-                // Set session data
-                req.session.userId = user.id;
-                req.session.username = user.username;
-                req.session.role = user.role;
-                req.session.nama = user.nama;
-                
-                console.log('✅ Login successful - session after:', req.session);
-                console.log('✅ Login successful - session ID:', req.sessionID);
-                
-                req.session.save((err) => {
+                // Regenerate session to prevent fixation
+                req.session.regenerate((err) => {
                     if (err) {
-                        console.error('Session save error:', err);
-                        return res.status(500).json({ success: false, message: 'Session save failed' });
+                        console.error('Session regenerate error:', err);
+                        return res.status(500).json({ success: false, message: 'Session error' });
                     }
+
+                    // Set session data
+                    req.session.userId = user.id;
+                    req.session.username = user.username;
+                    req.session.role = user.role;
+                    req.session.nama = user.nama;
+                    req.session.loginTime = new Date();
                     
-                    res.json({ 
-                        success: true, 
-                        user: { 
-                            id: user.id, 
-                            username: user.username, 
-                            role: user.role, 
-                            nama: user.nama 
-                        },
-                        sessionId: req.sessionID
+                    console.log('✅ Login successful - session after:', req.session);
+                    console.log('✅ Login successful - session ID:', req.sessionID);
+                    
+                    // Save session
+                    req.session.save((saveErr) => {
+                        if (saveErr) {
+                            console.error('Session save error:', saveErr);
+                            return res.status(500).json({ success: false, message: 'Session save failed' });
+                        }
+                        
+                        res.json({ 
+                            success: true, 
+                            message: 'Login berhasil',
+                            user: { 
+                                id: user.id, 
+                                username: user.username, 
+                                role: user.role, 
+                                nama: user.nama 
+                            },
+                            sessionId: req.sessionID
+                        });
                     });
                 });
             } else {
@@ -175,7 +207,7 @@ app.post('/login', async (req, res) => {
         }
     } catch (err) {
         console.error('Login error:', err);
-        res.status(400).json({ success: false, message: 'Request tidak valid: ' + err.message });
+        res.status(500).json({ success: false, message: 'Terjadi kesalahan server: ' + err.message });
     }
 });
 
@@ -263,9 +295,13 @@ app.post('/logout', (req, res) => {
     });
 });
 
-// ✅ CHECK SESSION ENDPOINT - aktif untuk frontend
+// ✅ CHECK SESSION ENDPOINT - enhanced
 app.get('/check-session', (req, res) => {
-    console.log('=== SESSION CHECK ===', req.session);
+    console.log('=== SESSION CHECK ===');
+    console.log('Session ID:', req.sessionID);
+    console.log('Session data:', req.session);
+    console.log('Cookies received:', req.headers.cookie);
+    
     if (req.session && req.session.userId) {
         res.json({
             success: true,
@@ -275,35 +311,58 @@ app.get('/check-session', (req, res) => {
                 username: req.session.username,
                 role: req.session.role,
                 nama: req.session.nama
-            }
+            },
+            sessionId: req.sessionID
         });
     } else {
-        res.json({ success: true, isLoggedIn: false });
+        console.log('No valid session found');
+        res.json({ 
+            success: true, 
+            isLoggedIn: false,
+            message: 'No active session'
+        });
+    }
+});
+
+// ✅ Session Keep-Alive Endpoint
+app.post('/session-keepalive', (req, res) => {
+    if (req.session.userId) {
+        // Touch the session to extend its lifetime
+        req.session.touch();
+        req.session.save((err) => {
+            if (err) {
+                console.error('Session keep-alive error:', err);
+                return res.json({ success: false, message: 'Session update failed' });
+            }
+            res.json({ success: true, message: 'Session updated' });
+        });
+    } else {
+        res.json({ success: false, message: 'No active session' });
     }
 });
 
 // ✅ HOME ROUTE tetap biarkan frontend handle auth
 app.get('/', (req, res) => {
     console.log('=== HOME ROUTE === session:', req.sessionID);
-    res.sendFile(path.join(__dirname, 'public', 'Index.html')); // ✅ FIX: hapus ../
+    res.sendFile(path.join(__dirname, 'public', 'Index.html'));
 });
 
 app.get('/Catalog.html', (req, res) => {
     console.log('Catalog route - req.session:', req.session);
     // Let frontend handle auth for now
-    res.sendFile(path.join(__dirname, 'public', 'Catalog.html')); // ✅ FIX: hapus ../
+    res.sendFile(path.join(__dirname, 'public', 'Catalog.html'));
 });
 
 app.get('/LoanHistory.html', (req, res) => {
     console.log('LoanHistory route - req.session:', req.session);
     // Let frontend handle auth for now
-    res.sendFile(path.join(__dirname, 'public', 'LoanHistory.html')); // ✅ FIX: hapus ../
+    res.sendFile(path.join(__dirname, 'public', 'LoanHistory.html'));
 });
 
 app.get('/Dashboard.html', (req, res) => {
     console.log('Dashboard route - req.session:', req.session);
     // Let frontend handle auth for now
-    res.sendFile(path.join(__dirname, 'public', 'Dashboard.html')); // ✅ FIX: hapus ../
+    res.sendFile(path.join(__dirname, 'public', 'Dashboard.html'));
 });
 
 // API Routes
@@ -751,7 +810,7 @@ app.post('/return-book/:id', requireAuth, async (req, res) => {
 
 // Serve images
 app.get('/images/*', (req, res) => {
-    const imagePath = path.join(__dirname, 'public', 'images', req.params[0]); // ✅ FIX: hapus ../
+    const imagePath = path.join(__dirname, 'public', 'images', req.params[0]);
     if (fs.existsSync(imagePath)) {
         res.sendFile(imagePath);
     } else {
