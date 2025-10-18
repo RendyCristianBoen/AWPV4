@@ -1,4 +1,4 @@
-// api/index.js - FULL FIXED CODE
+// api/index.js - FULL FIXED CODE WITH LOGIN AS CHECKPOINT & LOGOUT REDIRECT
 const express = require('express');
 const session = require('express-session');
 const cors = require('cors');
@@ -87,23 +87,37 @@ app.use(async (req, res, next) => {
     }
 });
 
-// ✅ FIX: Authentication middleware - ALLOW HTML ACCESS WITHOUT LOGIN
+// ✅ FIX: Authentication middleware - REDIRECT TO LOGIN IF NOT AUTHENTICATED
 function requireAuth(req, res, next) {
-    // Allow access to HTML files without authentication
-    if (req.path.endsWith('.html') || req.path === '/') {
+    // Allow access to login, register, about, and static files without authentication
+    const publicPaths = ['/login', '/register', '/about', '/health', '/check-session'];
+    const isPublicPath = publicPaths.includes(req.path) || 
+                        req.path.endsWith('.css') || 
+                        req.path.endsWith('.js') || 
+                        req.path.startsWith('/images/');
+    
+    if (isPublicPath) {
         return next();
     }
     
-    // Require authentication only for API routes
+    // Require authentication for all other routes
     if (req.session && req.session.userId) {
         return next();
     } else {
-        return res.status(401).json({ 
-            success: false, 
-            message: 'Silakan login terlebih dahulu'
-        });
+        // Redirect to login for HTML pages, return 401 for API calls
+        if (req.path.endsWith('.html') || req.path === '/') {
+            return res.redirect('/login');
+        } else {
+            return res.status(401).json({ 
+                success: false, 
+                message: 'Silakan login terlebih dahulu'
+            });
+        }
     }
 }
+
+// Apply auth middleware to all routes except static files
+app.use(requireAuth);
 
 // Admin/Petugas middleware
 function requireAdminOrPetugas(req, res, next) {
@@ -113,7 +127,7 @@ function requireAdminOrPetugas(req, res, next) {
     res.status(403).json({ success: false, message: 'Akses ditolak. Hanya admin atau petugas yang dapat mengakses fitur ini.' });
 }
 
-// ✅ FIX: Serve HTML files - NO AUTH REQUIRED
+// ✅ FIX: Serve HTML files - WITH AUTH REQUIRED (except login/register/about)
 app.get('/', (req, res) => {
     res.sendFile(path.join(publicPath, 'Index.html'));
 });
@@ -138,8 +152,8 @@ app.get('/LoanHistory.html', (req, res) => {
     res.sendFile(path.join(publicPath, 'LoanHistory.html'));
 });
 
-app.get('/dashboard.html', (req, res) => {
-    res.sendFile(path.join(publicPath, 'dashboard.html'));
+app.get('/Dashboard.html', (req, res) => {
+    res.sendFile(path.join(publicPath, 'Dashboard.html'));
 });
 
 // ✅ FIX: Serve static files explicitly
@@ -297,13 +311,19 @@ app.post('/register', async (req, res) => {
     }
 });
 
+// ✅ FIX: Logout route - REDIRECT TO LOGIN PAGE
 app.post('/logout', (req, res) => {
     req.session.destroy((err) => {
         if (err) {
             return res.status(500).json({ success: false, message: 'Gagal logout' });
         }
         res.clearCookie('lib_session');
-        res.json({ success: true, message: 'Logout berhasil' });
+        // ✅ Redirect to login page after successful logout
+        res.json({ 
+            success: true, 
+            message: 'Logout berhasil',
+            redirectTo: '/login'  // ✅ Add redirect information
+        });
     });
 });
 
@@ -326,7 +346,7 @@ app.get('/check-session', (req, res) => {
 });
 
 // ✅ FIX: API Routes - REQUIRE AUTH
-app.get('/data', requireAuth, async (req, res) => {
+app.get('/data', async (req, res) => {
     try {
         const [books] = await pool.execute('SELECT * FROM books');
         res.json(books);
@@ -336,7 +356,7 @@ app.get('/data', requireAuth, async (req, res) => {
     }
 });
 
-app.get('/dashboard-stats', requireAuth, async (req, res) => {
+app.get('/dashboard-stats', async (req, res) => {
     try {
         const [totalBooks] = await pool.execute('SELECT COUNT(*) as total FROM books');
         const [totalUsers] = await pool.execute('SELECT COUNT(*) as total FROM users');
@@ -360,7 +380,7 @@ app.get('/dashboard-stats', requireAuth, async (req, res) => {
     }
 });
 
-app.get('/search', requireAuth, async (req, res) => {
+app.get('/search', async (req, res) => {
     try {
         const { q: query, genre, minRating, year, author } = req.query;
         
@@ -409,7 +429,7 @@ app.get('/search', requireAuth, async (req, res) => {
     }
 });
 
-app.get('/recommendations', requireAuth, async (req, res) => {
+app.get('/recommendations', async (req, res) => {
     try {
         const { bookId, genre } = req.query;
         
@@ -451,7 +471,7 @@ app.get('/recommendations', requireAuth, async (req, res) => {
     }
 });
 
-app.get('/popular-books', requireAuth, async (req, res) => {
+app.get('/popular-books', async (req, res) => {
     try {
         const [popularBooks] = await pool.execute(`
             SELECT b.*, COUNT(lh.id) as loan_count
@@ -469,7 +489,7 @@ app.get('/popular-books', requireAuth, async (req, res) => {
     }
 });
 
-app.get('/reading-history', requireAuth, async (req, res) => {
+app.get('/reading-history', async (req, res) => {
     try {
         const [readingHistory] = await pool.execute(`
             SELECT lh.*, b.judul, b.penulis, b.gambar, b.genre, b.rating
@@ -487,7 +507,7 @@ app.get('/reading-history', requireAuth, async (req, res) => {
     }
 });
 
-app.get('/loan-history', requireAuth, async (req, res) => {
+app.get('/loan-history', async (req, res) => {
     try {
         let query = `
             SELECT lh.*, b.judul, b.penulis, b.gambar, u.nama as nama_peminjam 
@@ -514,7 +534,7 @@ app.get('/loan-history', requireAuth, async (req, res) => {
     }
 });
 
-app.get('/book/:id', requireAuth, async (req, res) => {
+app.get('/book/:id', async (req, res) => {
     try {
         const bookId = parseInt(req.params.id);
         const [books] = await pool.execute('SELECT * FROM books WHERE id = ?', [bookId]);
@@ -631,7 +651,7 @@ app.delete('/book/:id', requireAdminOrPetugas, async (req, res) => {
 });
 
 // Book status change
-app.post('/book/status/:id', requireAuth, async (req, res) => {
+app.post('/book/status/:id', async (req, res) => {
     try {
         const bookId = parseInt(req.params.id);
         const { status: newStatus, durasiHari = 7 } = req.body;
@@ -713,7 +733,7 @@ app.post('/book/status/:id', requireAuth, async (req, res) => {
 });
 
 // Return book
-app.post('/return-book/:id', requireAuth, async (req, res) => {
+app.post('/return-book/:id', async (req, res) => {
     try {
         const loanId = parseInt(req.params.id);
         

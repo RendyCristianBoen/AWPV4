@@ -272,21 +272,22 @@
             console.log('=== LOGIN PAGE NAV UPDATE COMPLETE ===');
         }
 
+        // Fungsi logout dengan redirect
         async function handleLogout(event) {
             event.preventDefault();
             try {
                 const response = await fetch('/logout', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    credentials: 'include',
+                    headers: { 'Content-Type': 'application/json' }
                 });
                 const result = await response.json();
                 if (result.success) {
                     localStorage.clear();
                     showNotification('👋 Anda telah berhasil logout.', 'success');
-                    // // window.location.href = '/login'; // Disabled for testing // Disabled for testing
+                    // ✅ REDIRECT KE LOGIN PAGE SETELAH LOGOUT
+                    setTimeout(() => {
+                        window.location.href = '/login';
+                    }, 1000);
                 } else {
                     showNotification('❌ Gagal logout: ' + result.message, 'error');
                 }
