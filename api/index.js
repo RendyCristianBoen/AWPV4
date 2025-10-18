@@ -49,15 +49,16 @@ app.use(cors({
 app.use(express.json());
 app.use(express.static(path.join(__dirname, '../public')));
 
-// Session configuration
+// Session configuration for Vercel
 app.use(session({
     secret: process.env.SESSION_SECRET || 'perpustakaan-secret-key-2024',
-    resave: false,
-    saveUninitialized: false,
+    resave: true,
+    saveUninitialized: true,
     cookie: {
-        secure: process.env.NODE_ENV === 'production',
+        secure: false, // Set to false for Vercel
         httpOnly: true,
-        maxAge: 24 * 60 * 60 * 1000
+        maxAge: 24 * 60 * 60 * 1000, // 24 hours
+        sameSite: 'lax'
     }
 }));
 
@@ -227,6 +228,28 @@ app.post('/logout', (req, res) => {
         }
         res.json({ success: true, message: 'Logout berhasil' });
     });
+});
+
+// Check session status
+app.get('/check-session', (req, res) => {
+    if (req.session && req.session.userId) {
+        res.json({
+            success: true,
+            isLoggedIn: true,
+            user: {
+                id: req.session.userId,
+                username: req.session.username,
+                role: req.session.role,
+                nama: req.session.nama
+            }
+        });
+    } else {
+        res.json({
+            success: true,
+            isLoggedIn: false,
+            user: null
+        });
+    }
 });
 
 // Protected routes

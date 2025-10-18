@@ -14,6 +14,35 @@
     id: ls.getItem('userId') || ''
   });
 
+  // ---- Session sync with backend ----
+  app.syncSession = async function() {
+    try {
+      const response = await fetch('/check-session', {
+        method: 'GET',
+        credentials: 'include'
+      });
+      const result = await response.json();
+      
+      if (result.success) {
+        if (result.isLoggedIn && result.user) {
+          // Update localStorage with backend session data
+          ls.setItem('isLoggedIn', 'true');
+          ls.setItem('userName', result.user.nama);
+          ls.setItem('userRole', result.user.role);
+          ls.setItem('userId', result.user.id);
+        } else {
+          // Clear localStorage if not logged in
+          ls.removeItem('isLoggedIn');
+          ls.removeItem('userName');
+          ls.removeItem('userRole');
+          ls.removeItem('userId');
+        }
+      }
+    } catch (error) {
+      console.error('Session sync error:', error);
+    }
+  };
+
   // ---- Page helpers ----
   function getPageKey(){
     const p = location.pathname.toLowerCase();
@@ -120,7 +149,11 @@
     link.addEventListener('click', async (e) => {
       e.preventDefault();
       try {
-        await fetch('/logout', { method:'POST', headers:{'Content-Type':'application/json'} });
+        await fetch('/logout', { 
+          method:'POST', 
+          headers:{'Content-Type':'application/json'},
+          credentials: 'include'
+        });
       } catch(_) {}
       localStorage.clear();
       try { location.replace('/login'); } catch(_) { location.href = '/login'; }
@@ -158,7 +191,8 @@
     } catch(_) {}
   };
 
-  function autoInit(){
+  async function autoInit(){
+    await app.syncSession(); // Sync with backend session first
     app.ensureAuth();
     app.enablePerformanceMode();
     app.updateNav();
