@@ -297,6 +297,14 @@
         }
 
         document.addEventListener('DOMContentLoaded', () => {
+            console.log('=== LOGIN PAGE DOM LOADED ===');
+            console.log('Login page - localStorage check:', {
+                isLoggedIn: localStorage.getItem('isLoggedIn'),
+                userName: localStorage.getItem('userName'),
+                userRole: localStorage.getItem('userRole'),
+                userId: localStorage.getItem('userId')
+            });
+            
             updateNav();
 
             const logoutLink = document.getElementById('logout-link');
@@ -327,6 +335,7 @@
                 }
             });
 
+            console.log('=== LOGIN PAGE DOM LOADED COMPLETE ===');
         });
     </script>
     <script src="js/app.js?v=20241220"></script>

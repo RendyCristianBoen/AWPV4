@@ -91,45 +91,7 @@
     console.log('Auth guard - disabled for testing');
     return;
     
-    // Original auth guard code (commented out for testing):
-    /*
-    // Cek apakah sudah ada flag redirect untuk mencegah loop
-    if (sessionStorage.getItem('redirecting')) {
-      console.log('Auth guard - already redirecting, skipping');
-      return;
-    }
-    
-    // Jika user sudah login dan berada di halaman login, redirect ke home
-    if (isLoggedIn && key === 'login') {
-      console.log('Auth guard - user logged in but on login page, redirecting to home');
-      sessionStorage.setItem('redirecting', 'true');
-      setTimeout(() => {
-        try { 
-          location.href = '/'; 
-          sessionStorage.removeItem('redirecting');
-        } catch(_) { 
-          location.replace('/'); 
-          sessionStorage.removeItem('redirecting');
-        }
-      }, 1000);
-      return;
-    }
-    
-    // Jika user belum login dan mengakses halaman protected, redirect ke login
-    if (!isLoggedIn && !publicPages.includes(key)) {
-      console.log('Auth guard - user not logged in, redirecting to login');
-      sessionStorage.setItem('redirecting', 'true');
-      setTimeout(() => {
-        try { 
-          location.href = '/login'; 
-          sessionStorage.removeItem('redirecting');
-        } catch(_) { 
-          location.replace('/login'); 
-          sessionStorage.removeItem('redirecting');
-        }
-      }, 1000);
-    }
-    */
+    // Auth guard completely disabled for testing
   };
 
   // ---- Navigation updater ----
@@ -251,7 +213,8 @@
         });
       } catch(_) {}
       localStorage.clear();
-      try { location.replace('/login'); } catch(_) { location.href = '/login'; }
+      // Redirect disabled for testing
+      console.log('Logout successful, localStorage cleared');
     });
   };
 
@@ -287,10 +250,21 @@
   };
 
   async function autoInit(){
+    console.log('=== AUTO INIT START ===');
     console.log('Auto init - localStorage status:', {
       isLoggedIn: ls.getItem('isLoggedIn'),
-      userName: ls.getItem('userName')
+      userName: ls.getItem('userName'),
+      userRole: ls.getItem('userRole'),
+      userId: ls.getItem('userId')
     });
+    
+    // Set flag untuk mencegah redirect loop
+    if (!sessionStorage.getItem('initComplete')) {
+      sessionStorage.setItem('initComplete', 'true');
+      console.log('Auto init - first time init, setting flag');
+    } else {
+      console.log('Auto init - already initialized, skipping');
+    }
     
     // Sementara disable session sync dan auth guard untuk testing
     console.log('Auto init - session sync and auth guard disabled for testing');
@@ -299,6 +273,8 @@
     app.updateNav();
     app.attachModeToggle();
     app.bindLogout();
+    
+    console.log('=== AUTO INIT COMPLETE ===');
   }
 
   if (document.readyState === 'loading') {
