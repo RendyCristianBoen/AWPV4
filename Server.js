@@ -396,10 +396,7 @@ app.get('/reading-history', requireAuth, async (req, res) => {
 });
 // Protected routes - require authentication
 app.get('/', (req, res) => {
-    if (!req.session || !req.session.userId) {
-        return res.redirect('/login');
-    }
-    res.sendFile(path.join(__dirname, 'public', 'Index.html'));
+    return res.redirect('/login');
 });
 
 app.get('/Catalog.html', (req, res) => {
@@ -826,7 +823,7 @@ async function startServer() {
     try {
         await initializeDatabase();
         
-        const PORT = 3000;
+        const PORT = 3001;
         app.listen(PORT, () => {
             console.log(`🚀 Server Express berjalan di http://localhost:${PORT}`);
             console.log(`📚 Sistem Informasi Perpustakaan UPGRADE siap digunakan!`);

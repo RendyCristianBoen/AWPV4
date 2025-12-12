@@ -1,0 +1,75 @@
+LINK HOSTING FINAL:
+https://awpv-4.vercel.app/
+
+admin login
+username: admin
+pw: admin123
+
+Anggota Kelompok:
+Awang Raditya Pratama
+Rendy Cristian Boen
+Aryasha Tahta Mahabilah
+
+Roles dalam pengerjaan:
+Rendy Cristian Boen sebagai Front end dan Back end
+kerjanya:
+Membuat tampilan halaman login, dashboard, dan form.
+Menangani validasi input di browser.
+Mengambil data dari API dan menampilkannya ke pengguna.
+Membuat dan mengelola API
+Mengatur koneksi ke database dan query data.
+Menangani autentikasi dan otorisasi pengguna.
+Mengatur logika bisnis seperti transaksi atau perhitungan.
+
+Awang Raditya Pratama sebagai hosting dan pembuat laporan
+kerjanya:
+Menyiapkan server atau layanan hosting
+Mengunggah (deploy) website agar bisa diakses dengan domain tertentu.
+Mengatur konfigurasi server seperti domain, SSL (HTTPS), dan port.
+Memastikan website tetap berjalan dengan baik (monitoring uptime, error log, dll).
+Menangani backup dan update sistem bila ada perubahan dari tim developer.
+Membuat laporan akhir proyek
+Menjelaskan tujuan, rancangan sistem, teknologi yang digunakan, hasil pengujian, dan kesimpulan.
+Menulis analisis hasil proyek, termasuk kendala dan solusi.
+
+Aryasha Tahta Mahabilah sebagai pembuat PPT hasil akhir
+kerjanya:
+Mengumpulkan Materi dari Tim
+Membuat Desain dan Struktur PPT
+Menyusun Konten Utama Presentasi
+Menyiapkan untuk Presentasi Lisan
+
+Any additional information:
+Login Sistem Perpustakaan
+Tujuan halaman:
+Untuk masuk ke sistem perpustakaan agar dapat mengakses koleksi buku secara lengkap.
+Elemen yang ada:
+Judul: Login Sistem Perpustakaan
+Deskripsi: “Masuk untuk mengakses koleksi buku lengkap.”
+Form input:
+Username → Kolom untuk memasukkan nama pengguna.
+Password → Kolom untuk memasukkan kata sandi.
+Tombol utama: 🚀 LOGIN SEKARANG
+Link tambahan:
+“Belum punya akun? Daftar di sini” → Menuju halaman pendaftaran pengguna baru.
+Catatan: “Untuk akses sebagai pengguna, silakan daftar terlebih dahulu.”
+
+Dashboard Administrator
+Tujuan halaman:
+Sebagai pusat kontrol dan pemantauan data sistem perpustakaan untuk admin.
+Elemen yang ada:
+Judul utama: Dashboard Analytics
+Deskripsi: “Selamat datang di Dashboard, Administrator System!”
+Navigasi di atas:
+🏠 Home
+📚 Katalog Buku
+📖 Riwayat Pinjam
+ℹ️ About
+👋 “Halo, Administrator System (admin)”
+🔒 Logout
+Tombol mode tampilan: “Mode Gelap” untuk beralih ke tema gelap.
+Statistik utama yang ditampilkan:
+📘 Total Buku: 156
+👥 Total Users: 48
+📖 Sedang Dipinjam: 12
+⭐ Total Peminjaman: (terlihat sebagian, kemungkinan ada di bawah)
