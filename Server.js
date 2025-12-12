@@ -171,7 +171,7 @@ app.post('/register', async (req, res) => {
         // Ambil data user yang baru dibuat
         const newUsers = await allQuery(
             'SELECT id, username, email, nama, role, telepon, alamat, created_at FROM users WHERE id = ?',
-            [result.lastID]
+            [result.insertId]
         );
         
         const newUser = newUsers[0];
